@@ -13,13 +13,11 @@ class ActivityViewModel: ObservableObject {
     
     private let apiClient: DirectusAPIClient
     private let userEmail: String?
-    private let bostedId: String
     private var cancellables = Set<AnyCancellable>()
     
-    init(apiClient: DirectusAPIClient, userEmail: String?, bostedId: String) {
+    init(apiClient: DirectusAPIClient, userEmail: String?) {
         self.apiClient = apiClient
         self.userEmail = userEmail
-        self.bostedId = bostedId
         
         Task {
             await fetchActivities()
@@ -30,7 +28,7 @@ class ActivityViewModel: ObservableObject {
         activityState = .loading
         
         do {
-            let activities = try await apiClient.getActivities(bostedId: bostedId, userEmail: userEmail)
+            let activities = try await apiClient.getActivities(userEmail: userEmail)
             
             // Filter to get upcoming activities
             let upcomingActivities = activities.filter { $0.isUpcoming() }

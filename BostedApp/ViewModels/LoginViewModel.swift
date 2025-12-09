@@ -14,11 +14,31 @@ class LoginViewModel: ObservableObject {
     private let authRepository: AuthRepository
     private var cancellables = Set<AnyCancellable>()
     
+    // Hardcoded credentials for automatic login (matching Android app)
+    private let adminEmail = "admin@team-op.dk"
+    private let adminPassword = "Teamop21"
+    
     init(authRepository: AuthRepository) {
         self.authRepository = authRepository
+        // Attempt automatic login on initialization
+        Task {
+            await attemptAutoLogin()
+        }
+    }
+    
+    /// Attempt automatic login with hardcoded credentials
+    private func attemptAutoLogin() async {
+        // Only attempt auto-login if not already logged in
+        if !isLoggedIn {
+            await loginWithCredentials(email: adminEmail, password: adminPassword)
+        }
     }
     
     func login() async {
+        await loginWithCredentials(email: email, password: password)
+    }
+    
+    private func loginWithCredentials(email: String, password: String) async {
         guard !email.isEmpty && !password.isEmpty else {
             errorMessage = "Indtast venligst email og adgangskode"
             return
@@ -35,16 +55,21 @@ class LoginViewModel: ObservableObject {
                 loggedInUserEmail = email
                 bostedId = "1" // Default bosted ID
                 isLoggedIn = true
+                print("✅ Login successful! User: \(email)")
             } else {
                 errorMessage = "Login mislykkedes"
+                print("❌ Login failed: Invalid credentials")
             }
             
         } catch let error as AuthError {
             errorMessage = error.localizedDescription
+            print("❌ Login failed with AuthError: \(error.localizedDescription)")
         } catch let error as APIError {
             errorMessage = error.localizedDescription
+            print("❌ Login failed with APIError: \(error.localizedDescription)")
         } catch {
             errorMessage = "Uventet fejl: \(error.localizedDescription)"
+            print("❌ Login failed with unexpected error: \(error.localizedDescription)")
         }
         
         isLoading = false
@@ -57,5 +82,6 @@ class LoginViewModel: ObservableObject {
         email = ""
         password = ""
         errorMessage = nil
+        print("👋 User logged out")
     }
 }

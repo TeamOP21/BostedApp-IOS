@@ -32,10 +32,35 @@ class ShiftPlanViewModel: ObservableObject {
         do {
             let shifts = try await apiClient.getShifts(userEmail: userEmail)
             
-            // Filter to get only today's shifts
-            let todaysShifts = shifts.filter { $0.isToday() }
+            print("DEBUG: Total shifts fetched: \(shifts.count)")
             
-            shiftPlanState = .success(shifts: todaysShifts)
+            // Filter to only show today's shifts (matching Android app behavior)
+            let today = Calendar.current.startOfDay(for: Date())
+            let todaysShifts = shifts.filter { shift in
+                guard let startDate = shift.startDate else {
+                    print("DEBUG: Shift \(shift.id) has no valid start date")
+                    return false
+                }
+                let shiftDay = Calendar.current.startOfDay(for: startDate)
+                let isToday = shiftDay == today
+                
+                print("DEBUG: Shift \(shift.id) - Start: \(shift.startDateTime), IsToday: \(isToday)")
+                
+                return isToday
+            }
+            
+            print("DEBUG: Today's date: \(today)")
+            print("DEBUG: Filtered to \(todaysShifts.count) shifts for today")
+            
+            // Sort by start time
+            let sortedShifts = todaysShifts.sorted { shift1, shift2 in
+                guard let date1 = shift1.startDate, let date2 = shift2.startDate else {
+                    return false
+                }
+                return date1 < date2
+            }
+            
+            shiftPlanState = .success(shifts: sortedShifts)
         } catch let error as APIError {
             shiftPlanState = .error(message: error.localizedDescription)
         } catch {

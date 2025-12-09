@@ -1,10 +1,13 @@
 import SwiftUI
 
 struct ActivityView: View {
-    @ObservedObject var viewModel: ActivityViewModel
-    let onLogout: () -> Void
+    @StateObject private var viewModel: ActivityViewModel
     @State private var selectedActivity: Activity?
     @State private var showRegistrationDialog: Activity?
+    
+    init(apiClient: DirectusAPIClient, userEmail: String) {
+        _viewModel = StateObject(wrappedValue: ActivityViewModel(apiClient: apiClient, userEmail: userEmail))
+    }
     
     var body: some View {
         ZStack {
@@ -22,7 +25,7 @@ struct ActivityView: View {
             
             VStack(spacing: 0) {
                 // Top Bar
-                TopBarView(onLogout: onLogout)
+                TopBarView(onLogout: {})
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                 
@@ -51,11 +54,11 @@ struct ActivityView: View {
     @ViewBuilder
     private var contentView: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Aktiviteter")
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding()
+                        Text("Aktiviteter")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding()
             
             switch viewModel.activityState {
             case .loading:
@@ -186,19 +189,6 @@ struct ActivityItemView: View {
             .cornerRadius(12)
         }
         .buttonStyle(PlainButtonStyle())
-    }
-    
-    @ViewBuilder
-    private var registrationButton: some View {
-        // Simplified version - just show a registration button for now
-        Button(action: onRegistrationClick) {
-            Text("Tilmeld")
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(red: 0.38, green: 0, blue: 0.93))
-                .cornerRadius(8)
-        }
     }
     
     private var formattedDateTime: String {

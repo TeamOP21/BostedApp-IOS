@@ -14,19 +14,46 @@ class AuthRepository {
     /// For now, we'll allow any user in the system to log in
     /// TODO: Implement proper user-level authentication when available
     func login(email: String, password: String) async throws -> Bool {
-        // First, authenticate as admin to get access to user list
-        _ = try await apiClient.loginAsAdmin()
+        print("🔐 Attempting login for email: \(email)")
         
-        // Then fetch all users and check if the email exists
-        let users = try await apiClient.getUsers()
-        let userExists = users.contains { $0.email == email }
-        
-        if !userExists {
-            throw AuthError.userNotFound
+        do {
+            // First, authenticate as admin to get access to user list
+            print("🔑 Authenticating as admin...")
+            _ = try await apiClient.loginAsAdmin()
+            print("✅ Admin authentication successful")
+            
+            // Then fetch all users and check if the email exists
+            print("👥 Fetching user list...")
+            let users = try await apiClient.getUsers()
+            print("✅ Found \(users.count) users in system")
+            
+            let userExists = users.contains { $0.email == email }
+            print("🔍 User \(email) exists: \(userExists)")
+            
+            if !userExists {
+                print("❌ User not found: \(email)")
+                throw AuthError.userNotFound
+            }
+            
+            // User exists in the system, allow login
+            print("✅ Login successful for: \(email)")
+            return true
+            
+        } catch let error as APIError {
+            print("❌ API Error during login: \(error.localizedDescription)")
+            // Convert API errors to more user-friendly messages
+            switch error {
+            case .notAuthenticated:
+                throw AuthError.authenticationFailed("Kunne ikke autentificere som admin")
+            case .serverError(let statusCode, let message):
+                throw AuthError.authenticationFailed("Serverfejl (\(statusCode)): \(message)")
+            default:
+                throw AuthError.authenticationFailed("API fejl: \(error.localizedDescription)")
+            }
+        } catch {
+            print("❌ Unexpected error during login: \(error.localizedDescription)")
+            throw AuthError.authenticationFailed("Uventet fejl: \(error.localizedDescription)")
         }
-        
-        // User exists in the system, allow login
-        return true
     }
     
     /// Check if user is logged in
@@ -40,11 +67,14 @@ class AuthRepository {
 
 enum AuthError: Error, LocalizedError {
     case userNotFound
+    case authenticationFailed(String)
     
     var errorDescription: String? {
         switch self {
         case .userNotFound:
             return "Email ikke fundet i systemet"
+        case .authenticationFailed(let message):
+            return message
         }
     }
 }

@@ -1,152 +1,157 @@
 import SwiftUI
 
 struct ShiftPlanView: View {
-    @ObservedObject var viewModel: ShiftPlanViewModel
-    let onLogout: () -> Void
+    @StateObject private var viewModel: ShiftPlanViewModel
+    
+    init(apiClient: DirectusAPIClient, userEmail: String?, bostedId: String) {
+        _viewModel = StateObject(wrappedValue: ShiftPlanViewModel(apiClient: apiClient, userEmail: userEmail, bostedId: bostedId))
+    }
     
     var body: some View {
-        ZStack {
-            // Gradient background
-            LinearGradient(
-                colors: [
-                    Color(red: 0.22, green: 0, blue: 0.7),  // #3700B3
-                    Color(red: 0, green: 0.74, blue: 0.83), // #00BCD4
-                    Color(red: 0.38, green: 0, blue: 0.93)  // #6200EE
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+        VStack {
+            // Header
+            Text("Vagtplan")
+                .font(.title)
+                .fontWeight(.bold)
+                .padding()
             
-            VStack(spacing: 0) {
-                // Top Bar
-                TopBarView(onLogout: onLogout)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+            // Content
+            switch viewModel.shiftPlanState {
+            case .loading:
+                ProgressView("Henter vagtplan...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                // Main content
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(red: 0.22, green: 0, blue: 0.7))
-                    .overlay(
-                        contentView
-                    )
-                    .padding(16)
+            case .success(let shifts):
+                if shifts.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray)
+                        
+                        Text("Ingen vagter fundet")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        
+                        Text("Der er ingen vagter planlagt for denne uge. Tjek senere for opdateringer.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        
+                        Button("Genindlæs") {
+                            Task {
+                                await viewModel.retryLoading()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(shifts, id: \.id) { shift in
+                                ShiftCard(shift: shift)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+                
+            case .error(let message):
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.red)
+                    
+                    Text("Fejl ved hentning af vagtplan")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                    
+                    Text(message)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                    
+                    Button("Prøv igen") {
+                        Task {
+                            await viewModel.retryLoading()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+struct ShiftCard: View {
+    let shift: Shift
+    
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+    
+    var body: some View {
+        Group {
+            // Create a separate card for each assigned user (matching Android design)
+            if let users = shift.assignedUsers, !users.isEmpty {
+                ForEach(users, id: \.id) { user in
+                    cardContent(userName: user.fullName, isEmptyCard: false)
+                }
+            } else {
+                // No users assigned - show a single card
+                cardContent(userName: "Ingen medarbejder tildelt", isEmptyCard: true)
             }
         }
     }
     
     @ViewBuilder
-    private var contentView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Medarbejdere i dag")
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding()
+    private func cardContent(userName: String, isEmptyCard: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Name at the top (bold)
+            Text(userName)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(isEmptyCard ? .orange : .primary)
             
-            switch viewModel.shiftPlanState {
-            case .loading:
-                Spacer()
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .frame(maxWidth: .infinity, alignment: .center)
-                Spacer()
-                
-            case .success(let shifts):
-                if shifts.isEmpty {
-                    Spacer()
-                    Text("Ingen medarbejdere på vagt i dag")
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    Spacer()
-                } else {
-                    ScrollView {
-                        VStack(spacing: 8) {
-                            ForEach(shifts) { shift in
-                                ShiftItemView(shift: shift)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-                
-            case .error(let message):
-                Spacer()
-                VStack(spacing: 16) {
-                    Text("Kunne ikke hente vagtplandata")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
+            // Time range (HH:mm format)
+            if let start = shift.startDate, let end = shift.endDate {
+                Text("\(Self.timeFormatter.string(from: start)) - \(Self.timeFormatter.string(from: end))")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            
+            // Sublocation with icon
+            if let subLocation = shift.subLocationName {
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.yellow)
                     
-                    Text(message)
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                    
-                    Button(action: {
-                        Task {
-                            await viewModel.retryLoading()
-                        }
-                    }) {
-                        Text("Prøv igen")
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Color.blue)
-                            .cornerRadius(8)
-                    }
+                    Text(subLocation)
+                        .font(.system(size: 14))
+                        .foregroundColor(.yellow)
                 }
-                .frame(maxWidth: .infinity)
-                Spacer()
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
-struct ShiftItemView: View {
-    let shift: Shift
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            ForEach(shift.assignedUsers ?? [], id: \.id) { user in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(user.fullName)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
-                    Text("\(formatTime(shift.startDateTime)) - \(formatTime(shift.endDateTime))")
-                        .font(.subheadline)
-                        .foregroundColor(Color(red: 0.73, green: 0.87, blue: 0.98))
-                    
-                    if let location = shift.subLocationName {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.fill")
-                                .font(.caption)
-                            Text(location)
-                                .font(.subheadline)
-                        }
-                        .foregroundColor(Color(red: 1, green: 0.92, blue: 0.23))
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(red: 0.29, green: 0.08, blue: 0.55))
-                .cornerRadius(12)
-            }
-        }
-    }
-    
-    private func formatTime(_ isoString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        guard let date = formatter.date(from: isoString) else {
-            return isoString
-        }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
-        timeFormatter.locale = Locale(identifier: "da_DK")
-        return timeFormatter.string(from: date)
-    }
+#Preview {
+    ShiftPlanView(
+        apiClient: DirectusAPIClient(),
+        userEmail: "test@example.com",
+        bostedId: "test-bosted-id"
+    )
 }

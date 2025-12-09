@@ -22,7 +22,7 @@ struct LoginView: View {
                 .padding(.horizontal)
             
             // Password field
-            SecureField("Password", text: $viewModel.password)
+            SecureField("Adgangskode", text: $viewModel.password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
             

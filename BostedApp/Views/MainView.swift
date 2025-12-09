@@ -7,6 +7,7 @@ enum NavigationDestination {
 }
 
 struct MainView: View {
+    let apiClient: DirectusAPIClient
     @ObservedObject var loginViewModel: LoginViewModel
     let userEmail: String
     let bostedId: String
@@ -31,8 +32,7 @@ struct MainView: View {
             VStack(spacing: 0) {
                 // Content area
                 Group {
-                    switch selectedTab {
-                    case .home:
+                    if selectedTab == .home {
                         HomeView(
                             userEmail: userEmail,
                             bostedId: bostedId,
@@ -40,23 +40,16 @@ struct MainView: View {
                             navigateToShiftPlan: { selectedTab = .shiftPlan },
                             navigateToActivities: { selectedTab = .activities }
                         )
-                    case .shiftPlan:
+                    } else if selectedTab == .shiftPlan {
                         ShiftPlanView(
-                            viewModel: ShiftPlanViewModel(
-                                apiClient: DirectusAPIClient(),
-                                userEmail: userEmail,
-                                bostedId: bostedId
-                            ),
-                            onLogout: onLogout
+                            apiClient: apiClient,
+                            userEmail: userEmail,
+                            bostedId: bostedId
                         )
-                    case .activities:
+                    } else {
                         ActivityView(
-                            viewModel: ActivityViewModel(
-                                apiClient: DirectusAPIClient(),
-                                userEmail: userEmail,
-                                bostedId: bostedId
-                            ),
-                            onLogout: onLogout
+                            apiClient: apiClient,
+                            userEmail: userEmail
                         )
                     }
                 }
@@ -90,7 +83,7 @@ struct HomeView: View {
                 VStack(spacing: 16) {
                     // Dagens Ret section
                     SectionCard(title: "Dagens Ret") {
-                        Text("Loading meal data...")
+                        Text("Indlæser måltidsdata...")
                             .foregroundColor(.white)
                             .padding()
                     }
@@ -126,11 +119,11 @@ struct HomeView: View {
 
 struct SectionCard<Content: View>: View {
     let title: String
-    let content: Content
+    let content: () -> Content
     
-    init(title: String, @ViewBuilder content: () -> Content) {
+    init(title: String, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
-        self.content = content()
+        self.content = content
     }
     
     var body: some View {
@@ -142,7 +135,7 @@ struct SectionCard<Content: View>: View {
                 .padding(.horizontal)
                 .padding(.top)
             
-            content
+            content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.22, green: 0, blue: 0.7))
