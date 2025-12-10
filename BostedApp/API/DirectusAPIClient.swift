@@ -322,7 +322,7 @@ class DirectusAPIClient {
     /// Get all sublocations for filtering and enrichment
     func getSubLocations() async throws -> [SubLocation] {
         print("🔍 Fetching all sublocations")
-        let data = try await authenticatedGet(path: "/items/subLocation")
+        let data = try await authenticatedGet(path: "/items/subLocation?limit=-1")
         
         // Log raw response
         if let rawResponse = String(data: data, encoding: .utf8) {
@@ -374,9 +374,9 @@ class DirectusAPIClient {
         let subLocations = try await getSubLocations()
         let subLocationDict = Dictionary(uniqueKeysWithValues: subLocations.map { ($0.id, $0) })
         
-        // Get all shifts from taskSchedule table
+        // Get all shifts from taskSchedule table (with pagination to get ALL records)
         print("🔍 Fetching shifts from taskSchedule...")
-        let shiftData = try await authenticatedGet(path: "/items/taskSchedule")
+        let shiftData = try await authenticatedGet(path: "/items/taskSchedule?limit=-1")
         
         // Log raw response for debugging
         if let rawShiftResponse = String(data: shiftData, encoding: .utf8) {
@@ -414,9 +414,9 @@ class DirectusAPIClient {
         let shifts = shiftResponse.data.filter { $0.taskType == "shift" }
         print("✅ Filtered to \(shifts.count) shifts (taskType == 'shift')")
         
-        // Get shift-sublocation mappings
+        // Get shift-sublocation mappings (with pagination to get ALL records)
         print("🔍 Fetching shift-sublocation mappings...")
-        let subLocationMappingData = try await authenticatedGet(path: "/items/taskSchedule_subLocation")
+        let subLocationMappingData = try await authenticatedGet(path: "/items/taskSchedule_subLocation?limit=-1")
         do {
             let subLocationMappingResponse = try JSONDecoder().decode(DirectusDataResponse<[TaskScheduleSubLocationMapping]>.self, from: subLocationMappingData)
             // Filter out entries with null taskSchedule_id
@@ -429,9 +429,9 @@ class DirectusAPIClient {
             let subLocationMappingDict = Dictionary(grouping: validSubLocationMappings, by: { $0.taskSchedule_id! })
             print("✅ Decoded \(subLocationMappingResponse.data.count) shift-sublocation mappings (\(validSubLocationMappings.count) valid)")
             
-            // Get shift-user mappings
+            // Get shift-user mappings (with pagination to get ALL records)
             print("🔍 Fetching shift-user mappings...")
-            let userMappingData = try await authenticatedGet(path: "/items/taskSchedule_user")
+            let userMappingData = try await authenticatedGet(path: "/items/taskSchedule_user?limit=-1")
             let userMappingResponse = try JSONDecoder().decode(DirectusDataResponse<[TaskScheduleUserMapping]>.self, from: userMappingData)
             // Filter out entries with null values
             let validUserMappings = userMappingResponse.data.compactMap { mapping -> TaskScheduleUserMapping? in
@@ -452,49 +452,91 @@ class DirectusAPIClient {
         
             // Enrich shifts with sublocation names and assigned users
             print("🔗 Enriching \(shifts.count) shifts...")
+            print("🔍 DEBUG: User location ID to filter by: \(userLocationId ?? "NONE")")
+            print("🔍 DEBUG: Total sublocations available: \(subLocationDict.count)")
+            
             var enrichedShifts: [Shift] = []
             for shift in shifts {
+                print("\n🔍 DEBUG: ========== Processing Shift ID \(shift.id) ==========")
+                print("🔍 DEBUG: Shift time: \(shift.startDateTime) - \(shift.endDateTime)")
+                
                 var updatedShift = shift
-                // Get sublocation mappings
-                if let mappings = subLocationMappingDict[updatedShift.id] {
-                var subLocationNames: [String] = []
                 var belongsToUserLocation = false
                 
-                for mapping in mappings {
-                    // Safely unwrap subLocation_id
-                    guard let subLocationId = mapping.subLocation_id,
-                          let subLocation = subLocationDict[subLocationId] else {
-                        continue
+                // Get sublocation mappings
+                if let mappings = subLocationMappingDict[updatedShift.id] {
+                    print("🔍 DEBUG: Shift \(shift.id) has \(mappings.count) sublocation mappings")
+                    var subLocationNames: [String] = []
+                    
+                    for mapping in mappings {
+                        print("🔍 DEBUG: Checking mapping with subLocation_id: \(mapping.subLocation_id ?? "nil")")
+                        
+                        // Safely unwrap subLocation_id
+                        guard let subLocationId = mapping.subLocation_id,
+                              let subLocation = subLocationDict[subLocationId] else {
+                            print("🔍 DEBUG: Could not find sublocation in dict")
+                            continue
+                        }
+                        
+                        print("🔍 DEBUG: Found sublocation: \(subLocation.name)")
+                        print("🔍 DEBUG: Sublocation's location ID: \(subLocation.location ?? "nil")")
+                        subLocationNames.append(subLocation.name)
+                        
+                        // Check if this sublocation belongs to user's location
+                        if let userLocation = userLocationId,
+                           let subLocLocation = subLocation.location,
+                           subLocLocation == userLocation {
+                            print("🔍 DEBUG: ✅ MATCH! This sublocation belongs to user's location")
+                            belongsToUserLocation = true
+                        } else {
+                            print("🔍 DEBUG: ❌ NO MATCH - sublocation location: \(subLocation.location ?? "nil") vs user location: \(userLocationId ?? "nil")")
+                        }
                     }
                     
-                    subLocationNames.append(subLocation.name)
-                    
-                    // Check if this sublocation belongs to user's location
-                    if let userLocation = userLocationId,
-                       let subLocLocation = subLocation.location,
-                       subLocLocation == userLocation {
-                        belongsToUserLocation = true
-                    }
+                    // Update shift with sublocation names
+                    updatedShift.subLocationName = subLocationNames.isEmpty ? nil : subLocationNames.joined(separator: ", ")
+                    print("🔍 DEBUG: Shift sublocation names: \(updatedShift.subLocationName ?? "none")")
+                } else {
+                    print("🔍 DEBUG: ⚠️ Shift \(shift.id) has NO sublocation mappings")
+                    // No sublocation mapping - if we're filtering by location, assume it belongs
+                    // to avoid losing data (matching Android's permissive approach)
+                    belongsToUserLocation = true
+                    print("🔍 DEBUG: Assuming it belongs to user location (permissive)")
                 }
                 
-                // Update shift with sublocation names
-                updatedShift.subLocationName = subLocationNames.isEmpty ? nil : subLocationNames.joined(separator: ", ")
+                print("🔍 DEBUG: belongsToUserLocation = \(belongsToUserLocation)")
                 
                 // Filter by user location if specified
                 if userLocationId != nil && !belongsToUserLocation {
+                    print("🔍 DEBUG: ❌ FILTERING OUT this shift (doesn't belong to user location)")
                     continue // Skip this shift
                 }
-            }
-            
-            // Get assigned users
-            if let userMappings = userMappingDict[updatedShift.id] {
-                let assignedUsers = userMappings.compactMap { mapping -> User? in
-                    guard let userId = mapping.user_id else { return nil }
-                    return userDict[userId]
+                
+                print("🔍 DEBUG: ✅ Shift passed location filter")
+                
+                // Get assigned users (MOVED OUTSIDE of sublocation block)
+                if let userMappings = userMappingDict[updatedShift.id] {
+                    print("🔍 DEBUG: Shift \(shift.id) has \(userMappings.count) user mappings")
+                    let assignedUsers = userMappings.compactMap { mapping -> User? in
+                        guard let userId = mapping.user_id else { 
+                            print("🔍 DEBUG: User mapping has nil user_id")
+                            return nil 
+                        }
+                        let user = userDict[userId]
+                        if let user = user {
+                            print("🔍 DEBUG: Found assigned user: \(user.fullName)")
+                        } else {
+                            print("🔍 DEBUG: Could not find user with ID: \(userId)")
+                        }
+                        return user
+                    }
+                    updatedShift.assignedUsers = assignedUsers.isEmpty ? nil : assignedUsers
+                    print("🔍 DEBUG: Total assigned users for shift: \(assignedUsers.count)")
+                } else {
+                    print("🔍 DEBUG: ⚠️ Shift \(shift.id) has NO user mappings")
                 }
-                updatedShift.assignedUsers = assignedUsers.isEmpty ? nil : assignedUsers
-            }
-            
+                
+                print("🔍 DEBUG: ✅ Adding shift to enriched list")
                 enrichedShifts.append(updatedShift)
             }
             
