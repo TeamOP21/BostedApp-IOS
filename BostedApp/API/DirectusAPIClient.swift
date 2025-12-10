@@ -144,17 +144,22 @@ class DirectusAPIClient {
         }
         
         if httpResponse.statusCode != 200 {
+            // Try to parse error response for better debugging
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ Token refresh failed with status \\(httpResponse.statusCode): \\(errorString)")
+            }
             throw APIError.tokenRefreshFailed
         }
         
-        let authResponse = try JSONDecoder().decode(DirectusDataResponse<AuthResponse>.self, from: data)
+        // Decode the response - same structure as login
+        let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
         
-        // Access token from nested structure: authResponse.data (AuthResponse) -> authResponse.data.data (AuthData)
-        let newAccessToken = authResponse.data.data.accessToken
+        // Access token from nested structure: authResponse.data (AuthData)
+        let newAccessToken = authResponse.data.accessToken
         
         // Update tokens
         self.accessToken = newAccessToken
-        if let newRefreshToken = authResponse.data.data.refreshToken {
+        if let newRefreshToken = authResponse.data.refreshToken {
             self.refreshToken = newRefreshToken
         }
         
