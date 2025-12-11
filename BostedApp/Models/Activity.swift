@@ -58,12 +58,21 @@ struct Activity: Codable, Identifiable {
     }
     
     /// Parse ISO 8601 date string to Date
+    /// The API returns dates in format: "2025-12-02T15:00:00" (no timezone)
     var startDate: Date? {
-        ISO8601DateFormatter().date(from: startDateTime)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.date(from: startDateTime)
     }
     
     var endDate: Date? {
-        ISO8601DateFormatter().date(from: endDateTime)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.date(from: endDateTime)
     }
     
     /// Check if activity is today
@@ -72,9 +81,12 @@ struct Activity: Codable, Identifiable {
         return Calendar.current.isDateInToday(start)
     }
     
-    /// Check if activity is in the future
+    /// Check if activity is upcoming (not yet ended) - matches Android implementation
     func isUpcoming() -> Bool {
-        guard let start = startDate else { return false }
-        return start > Date()
+        guard let end = endDate else { return false }
+        
+        // Activity is upcoming if it hasn't ended yet (matches Android: endDateTime.isAfter(now))
+        let now = Date()
+        return end > now
     }
 }
