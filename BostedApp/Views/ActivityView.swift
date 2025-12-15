@@ -155,36 +155,41 @@ struct ActivityItemView: View {
     
     var body: some View {
         Button(action: onActivityClick) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 // Date and time
                 Text(formattedDateTime)
-                    .font(.subheadline)
+                    .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.8))
                 
-                // Location
-                if let locationName = activity.subLocations?.first?.name {
+                // Location (Sted)
+                if let locationName = activity.subLocationName {
                     Text("Sted: \(locationName)")
-                        .font(.subheadline)
+                        .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.8))
                         .fontWeight(.semibold)
+                        .padding(.top, 4)
                 }
                 
-                // Title
+                Spacer()
+                    .frame(height: 8)
+                
+                // Activity title
                 Text(activity.title)
-                    .font(.headline)
+                    .font(.system(size: 18))
                     .foregroundColor(.white)
                     .fontWeight(.bold)
                 
-                // Content preview
+                // Activity content preview
                 if let description = activity.description {
                     Text(description)
-                        .font(.subheadline)
+                        .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.9))
                         .lineLimit(2)
+                        .padding(.top, 4)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
+            .padding(16)
             .background(Color(red: 0.29, green: 0.08, blue: 0.55))
             .cornerRadius(12)
         }
@@ -216,9 +221,30 @@ struct ActivityItemView: View {
     }
     
     private func parseDate(_ isoString: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: isoString)
+        // Use DateFormatter to parse without timezone conversion
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Europe/Copenhagen")
+        
+        // Try format with T separator: 2025-12-16T17:30:00
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        // Try format with fractional seconds: 2025-12-16T17:30:00.000
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        // Try format with timezone: 2025-12-16T17:30:00+01:00
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        return nil
     }
 }
 
@@ -353,8 +379,29 @@ struct ActivityDetailSheet: View {
     }
     
     private func parseDate(_ isoString: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: isoString)
+        // Use DateFormatter to parse without timezone conversion
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Europe/Copenhagen")
+        
+        // Try format with T separator: 2025-12-16T17:30:00
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        // Try format with fractional seconds: 2025-12-16T17:30:00.000
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        // Try format with timezone: 2025-12-16T17:30:00+01:00
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        if let date = formatter.date(from: isoString) {
+            return date
+        }
+        
+        return nil
     }
 }
