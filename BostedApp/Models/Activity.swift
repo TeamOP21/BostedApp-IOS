@@ -62,7 +62,7 @@ struct Activity: Codable, Identifiable {
     var startDate: Date? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        formatter.timeZone = TimeZone.current
+        formatter.timeZone = TimeZone(identifier: "Europe/Copenhagen")
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.date(from: startDateTime)
     }
@@ -70,7 +70,7 @@ struct Activity: Codable, Identifiable {
     var endDate: Date? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        formatter.timeZone = TimeZone.current
+        formatter.timeZone = TimeZone(identifier: "Europe/Copenhagen")
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.date(from: endDateTime)
     }

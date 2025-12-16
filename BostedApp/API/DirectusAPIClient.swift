@@ -584,13 +584,13 @@ class DirectusAPIClient {
         let subLocations = try await getSubLocations()
         let subLocationDict = Dictionary(uniqueKeysWithValues: subLocations.map { ($0.id, $0) })
         
-        // Get all activities from event table
-        let activityData = try await authenticatedGet(path: "/items/event")
+        // Get all activities from event table (with limit=-1 to get ALL events, not just first 100)
+        let activityData = try await authenticatedGet(path: "/items/event?limit=-1")
         let activityResponse = try JSONDecoder().decode(DirectusDataResponse<[Activity]>.self, from: activityData)
         let activities = activityResponse.data
         
-        // Get event-sublocation mappings
-        let mappingData = try await authenticatedGet(path: "/items/event_subLocation")
+        // Get event-sublocation mappings (with limit=-1 to get ALL entries, not just first 100)
+        let mappingData = try await authenticatedGet(path: "/items/event_subLocation?limit=-1")
         let mappingResponse = try JSONDecoder().decode(DirectusDataResponse<[EventSubLocationMapping]>.self, from: mappingData)
         // Filter out entries with null values
         let validEventMappings = mappingResponse.data.compactMap { mapping -> EventSubLocationMapping? in
@@ -601,47 +601,69 @@ class DirectusAPIClient {
         }
         let mappingDict = Dictionary(grouping: validEventMappings, by: { $0.event_id! })
         
-        // Enrich activities with sublocation names and filter by location
-        var enrichedActivities: [Activity] = []
-        for var activity in activities {
-            // Get sublocation mappings
-            if let mappings = mappingDict[activity.id] {
-                var subLocationNames: [String] = []
-                var belongsToUserLocation = false
+            // Enrich activities with sublocation names and filter by location
+            var enrichedActivities: [Activity] = []
+            for var activity in activities {
+                print("🔍 ACTIVITY_FILTER: ========== Processing activity \(activity.id): \(activity.title) ==========")
                 
-                for mapping in mappings {
-                    // Safely unwrap subLocation_id
-                    guard let subLocationId = mapping.subLocation_id,
-                          let subLocation = subLocationDict[subLocationId] else {
+                // Get sublocation mappings
+                if let mappings = mappingDict[activity.id] {
+                    print("🔍 ACTIVITY_FILTER: Activity \(activity.id) has \(mappings.count) sublocation mappings")
+                    var subLocationNames: [String] = []
+                    var belongsToUserLocation = false
+                    
+                    for mapping in mappings {
+                        print("🔍 ACTIVITY_FILTER: Checking mapping with subLocation_id: \(mapping.subLocation_id ?? "nil")")
+                        
+                        // Safely unwrap subLocation_id
+                        guard let subLocationId = mapping.subLocation_id,
+                              let subLocation = subLocationDict[subLocationId] else {
+                            print("🔍 ACTIVITY_FILTER: Could not find sublocation in dict")
+                            continue
+                        }
+                        
+                        print("🔍 ACTIVITY_FILTER: Found sublocation: \(subLocation.name)")
+                        print("🔍 ACTIVITY_FILTER: Sublocation's location ID: '\(subLocation.location ?? "nil")'")
+                        print("🔍 ACTIVITY_FILTER: User's location ID: '\(userLocationId ?? "nil")'")
+                        
+                        subLocationNames.append(subLocation.name)
+                        
+                        // Check if this sublocation belongs to user's location
+                        if let userLocation = userLocationId,
+                           let subLocLocation = subLocation.location {
+                            let matches = subLocLocation == userLocation
+                            print("🔍 ACTIVITY_FILTER: Location comparison: '\(subLocLocation)' == '\(userLocation)' = \(matches)")
+                            if matches {
+                                belongsToUserLocation = true
+                                print("🔍 ACTIVITY_FILTER: ✅ MATCH! This activity belongs to user's location")
+                            }
+                        }
+                    }
+                    
+                    // Update activity with sublocation names
+                    activity.subLocationName = subLocationNames.isEmpty ? nil : subLocationNames.joined(separator: ", ")
+                    print("🔍 ACTIVITY_FILTER: Activity sublocation names: \(activity.subLocationName ?? "none")")
+                    print("🔍 ACTIVITY_FILTER: belongsToUserLocation = \(belongsToUserLocation)")
+                    
+                    // Filter by user location if specified
+                    if userLocationId != nil && !belongsToUserLocation {
+                        print("🔍 ACTIVITY_FILTER: ❌ FILTERING OUT activity \(activity.id) - doesn't match user location")
+                        continue // Skip this activity
+                    }
+                    
+                    print("🔍 ACTIVITY_FILTER: ✅ Including activity \(activity.id)")
+                } else {
+                    print("🔍 ACTIVITY_FILTER: ⚠️ Activity \(activity.id) has NO sublocation mappings")
+                    // If no sublocation mapping, skip if user location filtering is enabled
+                    if userLocationId != nil {
+                        print("🔍 ACTIVITY_FILTER: ❌ FILTERING OUT unmapped activity \(activity.id)")
                         continue
                     }
-                    
-                    subLocationNames.append(subLocation.name)
-                    
-                    // Check if this sublocation belongs to user's location
-                    if let userLocation = userLocationId,
-                       let subLocLocation = subLocation.location,
-                       subLocLocation == userLocation {
-                        belongsToUserLocation = true
-                    }
+                    print("🔍 ACTIVITY_FILTER: ✅ Including unmapped activity \(activity.id) (no user location)")
                 }
                 
-                // Update activity with sublocation names
-                activity.subLocationName = subLocationNames.isEmpty ? nil : subLocationNames.joined(separator: ", ")
-                
-                // Filter by user location if specified
-                if userLocationId != nil && !belongsToUserLocation {
-                    continue // Skip this activity
-                }
-            } else {
-                // If no sublocation mapping, skip if user location filtering is enabled
-                if userLocationId != nil {
-                    continue
-                }
+                enrichedActivities.append(activity)
             }
-            
-            enrichedActivities.append(activity)
-        }
         
         print("✅ Found \(enrichedActivities.count) activities for user location")
         
