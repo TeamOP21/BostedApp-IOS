@@ -38,7 +38,8 @@ struct MainView: View {
                             bostedId: bostedId,
                             onLogout: onLogout,
                             navigateToShiftPlan: { selectedTab = .shiftPlan },
-                            navigateToActivities: { selectedTab = .activities }
+                            navigateToActivities: { selectedTab = .activities },
+                            apiClient: apiClient
                         )
                     } else if selectedTab == .shiftPlan {
                         ShiftPlanView(
@@ -62,20 +63,62 @@ struct MainView: View {
 }
 
 struct HomeView: View {
+    let apiClient: DirectusAPIClient
     let userEmail: String
     let bostedId: String
     let onLogout: () -> Void
     let navigateToShiftPlan: () -> Void
     let navigateToActivities: () -> Void
     
+    @StateObject private var viewModel: MainViewModel
+    
+    init(userEmail: String, bostedId: String, onLogout: @escaping () -> Void, navigateToShiftPlan: @escaping () -> Void, navigateToActivities: @escaping () -> Void, apiClient: DirectusAPIClient) {
+        self.userEmail = userEmail
+        self.bostedId = bostedId
+        self.onLogout = onLogout
+        self.navigateToShiftPlan = navigateToShiftPlan
+        self.navigateToActivities = navigateToActivities
+        self.apiClient = apiClient
+        
+        _viewModel = StateObject(wrappedValue: MainViewModel(apiClient: apiClient, userEmail: userEmail, bostedId: bostedId))
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Top Bar
-            TopBarView(onLogout: onLogout)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+            HStack {
+                // Date display on the left
+                Text("Idag")
+                    .foregroundColor(.white)
+                    .font(.system(size: 18, weight: .medium))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black)
+                    .cornerRadius(24)
+                
+                Spacer()
+                
+                // Account button on the right
+                Menu {
+                    Button(action: {
+                        onLogout()
+                    }) {
+                        Label("Log ud", systemImage: "arrow.right.square")
+                    }
+                } label: {
+                    Circle()
+                        .fill(Color.black)
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.white)
+                        )
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
             
-            Spacer()
+            Color.clear
                 .frame(height: 16)
             
             // Scrollable content
@@ -88,30 +131,155 @@ struct HomeView: View {
                             .padding()
                     }
                     
-                    // På vagt section - clickable
-                    Button(action: navigateToShiftPlan) {
-                        SectionCard(title: "På vagt") {
-                            Text("Se vagtplan →")
-                                .foregroundColor(.white)
-                                .padding()
-                        }
+                    // På vagt section
+                    SectionCard(title: "På vagt") {
+                        StaffOnShiftContent(state: viewModel.staffOnShiftState)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
-                    // Kommende aktiviteter - clickable
-                    Button(action: navigateToActivities) {
-                        SectionCard(title: "Kommende aktiviteter") {
-                            Text("Se alle aktiviteter →")
-                                .foregroundColor(.white)
-                                .padding()
-                        }
+                    // Kommende aktiviteter section
+                    SectionCard(title: "Kommende aktiviteter") {
+                        UpcomingActivitiesContent(state: viewModel.upcomingActivitiesState, userEmail: userEmail)
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
-                    Spacer()
+                    Color.clear
                         .frame(height: 16)
                 }
                 .padding(.horizontal, 16)
+            }
+        }
+    }
+}
+
+struct StaffOnShiftContent: View {
+    let state: StaffOnShiftUIState
+    
+    var body: some View {
+        Group {
+            switch state {
+            case .loading:
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .padding()
+            
+            case .success(let staff):
+                if staff.isEmpty {
+                    Text("Ingen personale er på vagt i øjeblikket")
+                        .foregroundColor(.white)
+                        .padding()
+                } else {
+                    Text(formatStaffNames(staff))
+                        .foregroundColor(.white)
+                        .padding()
+                }
+            
+            case .error(let message):
+                Text(message)
+                    .foregroundColor(.white)
+                    .padding()
+            }
+        }
+    }
+    
+    private func formatStaffNames(_ staff: [User]) -> String {
+        switch staff.count {
+        case 1:
+            return staff[0].fullName
+        case 2:
+            return "\(staff[0].fullName) og \(staff[1].fullName)"
+        default:
+            let allButLast = staff.dropLast().map { $0.fullName }.joined(separator: ", ")
+            let last = staff.last?.fullName ?? ""
+            return "\(allButLast) og \(last)"
+        }
+    }
+}
+
+struct UpcomingActivitiesContent: View {
+    let state: UpcomingActivitiesUIState
+    let userEmail: String?
+    
+    var body: some View {
+        Group {
+            switch state {
+            case .loading:
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .padding()
+            
+            case .success(let activities):
+                if activities.isEmpty {
+                    Text("Ingen kommende aktiviteter")
+                        .foregroundColor(.white)
+                        .padding()
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(activities, id: \.id) { activity in
+                            UpcomingActivityRow(activity: activity, userEmail: userEmail)
+                            
+                            if activity.id != activities.last?.id {
+                                Divider()
+                                    .background(Color.white.opacity(0.3))
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            
+            case .error(let message):
+                Text(message)
+                    .foregroundColor(.white)
+                    .padding()
+            }
+        }
+    }
+}
+
+struct UpcomingActivityRow: View {
+    let activity: Activity
+    let userEmail: String?
+    
+    private var isUserRegistered: Bool {
+        userEmail != nil && (activity.registeredUsers?.contains(where: { $0.email == userEmail }) ?? false)
+    }
+    
+    private func formatActivityDateTime(startDate: Date, endDate: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "d/M"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        
+        let date = dateFormatter.string(from: startDate)
+        let time = timeFormatter.string(from: startDate)
+        
+        let duration = endDate.timeIntervalSince(startDate)
+        let hours = Int(duration / 3600)
+        let minutes = Int((duration.truncatingRemainder(dividingBy: 3600)) / 60)
+        
+        let durationText: String
+        if hours > 0 && minutes > 0 {
+            durationText = "\(hours)t \(minutes)m"
+        } else if hours > 0 {
+            durationText = "\(hours)t"
+        } else {
+            durationText = "\(minutes)m"
+        }
+        
+        return "\(date), \(time), \(durationText)"
+    }
+    
+    var body: some View {
+        HStack {
+            Text(activity.title)
+                .foregroundColor(isUserRegistered ? Color.red.opacity(0.9) : .white)
+                .fontWeight(.medium)
+                .lineLimit(1)
+            
+            Spacer()
+            
+            if let startDate = activity.startDate, let endDate = activity.endDate {
+                Text(formatActivityDateTime(startDate: startDate, endDate: endDate))
+                    .foregroundColor((isUserRegistered ? Color.red.opacity(0.9) : .white).opacity(0.8))
+                    .font(.system(size: 14))
             }
         }
     }
