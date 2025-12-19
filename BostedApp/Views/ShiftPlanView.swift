@@ -8,84 +8,107 @@ struct ShiftPlanView: View {
     }
     
     var body: some View {
-        VStack {
-            // Header
-            Text("Vagtplan")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding()
+        ZStack {
+            // Background gradient matching Android
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0x37 / 255, green: 0x00 / 255, blue: 0xB3 / 255),
+                    Color(red: 0x00 / 255, green: 0xBC / 255, blue: 0xD4 / 255),
+                    Color(red: 0x62 / 255, green: 0x00 / 255, blue: 0xEE / 255)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            // Content
-            switch viewModel.shiftPlanState {
-            case .loading:
-                ProgressView("Henter vagtplan...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
-            case .success(let shifts):
-                if shifts.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
+            VStack(spacing: 16) {
+                // Main content card with purple background
+                VStack(spacing: 0) {
+                    // Header
+                    Text("Medarbejdere i dag")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                    
+                    // Content
+                    switch viewModel.shiftPlanState {
+                    case .loading:
+                        Spacer()
+                        ProgressView("Henter vagtplan...")
+                            .foregroundColor(.white)
+                            .tint(.white)
+                        Spacer()
                         
-                        Text("Ingen vagter fundet")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        
-                        Text("Der er ingen vagter planlagt for denne uge. Tjek senere for opdateringer.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                        
-                        Button("Genindlæs") {
-                            Task {
-                                await viewModel.retryLoading()
+                    case .success(let shifts):
+                        if shifts.isEmpty {
+                            Spacer()
+                            VStack(spacing: 16) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.white)
+                                
+                                Text("Ingen medarbejdere på vagt i dag")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                Button("Genindlæs") {
+                                    Task {
+                                        await viewModel.retryLoading()
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .padding(.top, 8)
+                            }
+                            Spacer()
+                        } else {
+                            ScrollView {
+                                LazyVStack(spacing: 8) {
+                                    ForEach(shifts, id: \.id) { shift in
+                                        ShiftCard(shift: shift)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 16)
                             }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(shifts, id: \.id) { shift in
-                                ShiftCard(shift: shift)
+                        
+                    case .error(let message):
+                        Spacer()
+                        VStack(spacing: 16) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 48))
+                                .foregroundColor(.white)
+                            
+                            Text("Kunne ikke hente vagtplandata")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            
+                            Text(message)
+                                .font(.body)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                            
+                            Button("Prøv igen") {
+                                Task {
+                                    await viewModel.retryLoading()
+                                }
                             }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.top, 8)
                         }
-                        .padding(.horizontal, 16)
+                        Spacer()
                     }
                 }
-                
-            case .error(let message):
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 48))
-                        .foregroundColor(.red)
-                    
-                    Text("Fejl ved hentning af vagtplan")
-                        .font(.headline)
-                        .foregroundColor(.red)
-                    
-                    Text(message)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    
-                    Button("Prøv igen") {
-                        Task {
-                            await viewModel.retryLoading()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.top, 8)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    Color(red: 0x37 / 255, green: 0x00 / 255, blue: 0xB3 / 255)
+                )
+                .cornerRadius(24)
+                .padding(.horizontal, 16)
             }
         }
-        .background(Color(.systemGroupedBackground))
     }
 }
 
@@ -115,36 +138,35 @@ struct ShiftCard: View {
     @ViewBuilder
     private func cardContent(userName: String, isEmptyCard: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Name at the top (bold)
+            // Name at the top (bold, white)
             Text(userName)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundColor(isEmptyCard ? .orange : .primary)
+                .foregroundColor(.white)
             
-            // Time range (HH:mm format)
+            // Time range (HH:mm format, light blue)
             if let start = shift.startDate, let end = shift.endDate {
                 Text("\(Self.timeFormatter.string(from: start)) - \(Self.timeFormatter.string(from: end))")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color(red: 0xBB / 255, green: 0xDE / 255, blue: 0xFB / 255))
             }
             
-            // Sublocation with icon
+            // Sublocation with icon (yellow)
             if let subLocation = shift.subLocationName {
                 HStack(spacing: 4) {
                     Image(systemName: "location.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(Color(red: 0xFF / 255, green: 0xEB / 255, blue: 0x3B / 255))
                     
                     Text(subLocation)
                         .font(.system(size: 14))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(Color(red: 0xFF / 255, green: 0xEB / 255, blue: 0x3B / 255))
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(.systemBackground))
+        .background(Color(red: 0x4A / 255, green: 0x14 / 255, blue: 0x8C / 255))
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }
 
