@@ -24,6 +24,9 @@
 		A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345693 /* AuthRepository.swift */; };
 		A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456AB /* APITypes.swift */; };
 		A1B2C3D4E5F6789012345694 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345695 /* Assets.xcassets */; };
+		A1B2C3D4E5F67890123456B1 /* Medicine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B0 /* Medicine.swift */; };
+		A1B2C3D4E5F67890123456B3 /* MedicineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */; };
+		A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B4 /* MedicineView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +49,9 @@
 		A1B2C3D4E5F67890123456AB /* APITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITypes.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345695 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345696 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F67890123456B0 /* Medicine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Medicine.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicineViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F67890123456B4 /* MedicineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicineView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +102,7 @@
 				A1B2C3D4E5F678901234567D /* MainView.swift */,
 				A1B2C3D4E5F678901234567F /* ShiftPlanView.swift */,
 				A1B2C3D4E5F6789012345681 /* ActivityView.swift */,
+				A1B2C3D4E5F67890123456B4 /* MedicineView.swift */,
 				A1B2C3D4E5F678901234569F /* Components */,
 			);
 			path = Views;
@@ -108,6 +115,7 @@
 				A1B2C3D4E5F6789012345687 /* ShiftPlanViewModel.swift */,
 				A1B2C3D4E5F6789012345689 /* ActivityViewModel.swift */,
 				A1B2C3D4E5F67890123456AD /* MainViewModel.swift */,
+				A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -118,6 +126,7 @@
 				A1B2C3D4E5F678901234568B /* User.swift */,
 				A1B2C3D4E5F678901234568D /* Shift.swift */,
 				A1B2C3D4E5F678901234568F /* Activity.swift */,
+				A1B2C3D4E5F67890123456B0 /* Medicine.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -223,12 +232,15 @@
 			A1B2C3D4E5F678901234568A /* User.swift in Sources */,
 				A1B2C3D4E5F678901234568C /* Shift.swift in Sources */,
 				A1B2C3D4E5F678901234568E /* Activity.swift in Sources */,
-				A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */,
-				A1B2C3D4E5F6789012345690 /* DirectusAPIClient.swift in Sources */,
-				A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+			A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */,
+			A1B2C3D4E5F6789012345690 /* DirectusAPIClient.swift in Sources */,
+			A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */,
+			A1B2C3D4E5F67890123456B1 /* Medicine.swift in Sources */,
+			A1B2C3D4E5F67890123456B3 /* MedicineViewModel.swift in Sources */,
+			A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */,
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

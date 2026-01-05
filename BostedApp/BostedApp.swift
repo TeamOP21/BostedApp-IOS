@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct BostedAppMain: App {
@@ -16,6 +17,7 @@ struct BostedAppMain: App {
         WindowGroup {
             ContentView(loginViewModel: loginViewModel, apiClient: apiClient)
         }
+        .modelContainer(for: [Medicine.self, Reminder.self])
     }
 }
 

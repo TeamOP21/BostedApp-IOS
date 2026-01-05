@@ -4,6 +4,7 @@ enum NavigationDestination {
     case home
     case shiftPlan
     case activities
+    case medicine
 }
 
 struct MainView: View {
@@ -13,6 +14,7 @@ struct MainView: View {
     let bostedId: String
     let onLogout: () -> Void
     
+    @Environment(\.modelContext) private var modelContext
     @State private var selectedTab: NavigationDestination = .home
     
     var body: some View {
@@ -47,11 +49,13 @@ struct MainView: View {
                             userEmail: userEmail,
                             bostedId: bostedId
                         )
-                    } else {
+                    } else if selectedTab == .activities {
                         ActivityView(
                             apiClient: apiClient,
                             userEmail: userEmail
                         )
+                    } else {
+                        MedicineView(modelContext: modelContext)
                     }
                 }
                 
@@ -341,6 +345,15 @@ struct BottomNavigationView: View {
                 isSelected: selectedTab == .activities
             ) {
                 selectedTab = .activities
+            }
+            
+            // Medicine button
+            BottomNavItem(
+                icon: "pills.fill",
+                label: "Medicin",
+                isSelected: selectedTab == .medicine
+            ) {
+                selectedTab = .medicine
             }
         }
         .frame(height: 70)

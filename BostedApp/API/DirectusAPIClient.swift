@@ -145,9 +145,7 @@ class DirectusAPIClient {
         
         if httpResponse.statusCode != 200 {
             // Try to parse error response for better debugging
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ Token refresh failed with status \\(httpResponse.statusCode): \\(errorString)")
-            }
+            print("❌ Token refresh failed with status \(httpResponse.statusCode): \(String(data: data, encoding: .utf8) ?? "Unable to read response")")
             throw APIError.tokenRefreshFailed
         }
         
