@@ -5,7 +5,6 @@ struct MedicineView: View {
     @StateObject private var viewModel: MedicineViewModel
     @State private var showAddMedicine = false
     @State private var selectedMedicine: MedicineWithReminders?
-    @State private var showDeleteConfirmation = false
     
     init(modelContext: ModelContext) {
         _viewModel = StateObject(wrappedValue: MedicineViewModel(modelContext: modelContext))
@@ -116,25 +115,12 @@ struct MedicineView: View {
             MedicineDetailView(
                 medicineWithReminders: medicine,
                 onDelete: {
-                    showDeleteConfirmation = true
+                    viewModel.deleteMedicine(medicine.medicine)
                 },
                 onClose: {
                     selectedMedicine = nil
                 }
             )
-        }
-        .alert("Slet medicin", isPresented: $showDeleteConfirmation) {
-            Button("Annuller", role: .cancel) { }
-            Button("Slet", role: .destructive) {
-                if let medicine = selectedMedicine {
-                    viewModel.deleteMedicine(medicine.medicine)
-                    selectedMedicine = nil
-                }
-            }
-        } message: {
-            if let medicine = selectedMedicine {
-                Text("Er du sikker på, at du vil slette \(medicine.medicine.name) og alle tilhørende påmindelser? Dette kan ikke fortrydes.")
-            }
         }
     }
 }
@@ -199,6 +185,8 @@ struct MedicineDetailView: View {
     let medicineWithReminders: MedicineWithReminders
     let onDelete: () -> Void
     let onClose: () -> Void
+    
+    @State private var showDeleteConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -274,7 +262,9 @@ struct MedicineDetailView: View {
                         Spacer()
                         
                         // Delete button
-                        Button(action: onDelete) {
+                        Button(action: {
+                            showDeleteConfirmation = true
+                        }) {
                             HStack {
                                 Image(systemName: "trash.fill")
                                 Text("Slet medicin")
@@ -297,6 +287,15 @@ struct MedicineDetailView: View {
                     }
                     .foregroundColor(.white)
                 }
+            }
+            .alert("Slet medicin", isPresented: $showDeleteConfirmation) {
+                Button("Annuller", role: .cancel) { }
+                Button("Slet", role: .destructive) {
+                    onDelete()
+                    onClose()
+                }
+            } message: {
+                Text("Er du sikker på, at du vil slette \(medicineWithReminders.medicine.name) og alle tilhørende påmindelser? Dette kan ikke fortrydes.")
             }
         }
     }
