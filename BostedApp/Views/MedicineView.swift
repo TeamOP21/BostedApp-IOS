@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import MapKit
 
 struct MedicineView: View {
     @StateObject private var viewModel: MedicineViewModel
@@ -12,12 +13,12 @@ struct MedicineView: View {
     
     var body: some View {
         ZStack {
-            // Gradient background
+            // Gradient background - matching Android colors exactly
             LinearGradient(
                 colors: [
-                    Color(red: 0.22, green: 0, blue: 0.7),
-                    Color(red: 0, green: 0.74, blue: 0.83),
-                    Color(red: 0.38, green: 0, blue: 0.93)
+                    Color(red: 0.216, green: 0, blue: 0.702),    // #3700B3
+                    Color(red: 0, green: 0.737, blue: 0.831),      // #00BCD4
+                    Color(red: 0.384, green: 0, blue: 0.933)       // #6200EE
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -173,7 +174,7 @@ struct MedicineCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(Color(red: 0.22, green: 0, blue: 0.7))
+            .background(Color(red: 0.290, green: 0.078, blue: 0.549))  // #4A148C - matching Android
             .cornerRadius(16)
         }
     }
@@ -319,6 +320,13 @@ struct CreateMedicineFlow: View {
                         MedicineNameInput(viewModel: viewModel)
                     case .frequencySelection(let medicineName):
                         MedicineFrequencySelection(viewModel: viewModel, medicineName: medicineName)
+                    case .locationSelection(let medicineName, let reminderType, let snoozeType):
+                        MedicineLocationSelection(
+                            viewModel: viewModel,
+                            medicineName: medicineName,
+                            reminderType: reminderType,
+                            snoozeType: snoozeType
+                        )
                     case .timeSelection(let medicineName, let frequency, let reminderType, let snoozeType):
                         MedicineTimeSelection(
                             viewModel: viewModel,
@@ -379,7 +387,7 @@ struct MedicineNameInput: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(medicineName.isEmpty ? Color.gray : Color(red: 0.22, green: 0, blue: 0.7))
+                    .background(medicineName.isEmpty ? Color.gray : Color(red: 0.384, green: 0, blue: 0.933))  // #6200EE
                     .cornerRadius(12)
             }
             .disabled(medicineName.isEmpty)
@@ -465,6 +473,108 @@ struct MedicineFrequencySelection: View {
                     .background(Color(red: 0.22, green: 0, blue: 0.7))
                     .cornerRadius(12)
             }
+            .padding()
+        }
+        .padding()
+    }
+}
+
+// MARK: - Medicine Location Selection
+
+struct MedicineLocationSelection: View {
+    @ObservedObject var viewModel: MedicineViewModel
+    let medicineName: String
+    let reminderType: ReminderType
+    let snoozeType: SnoozeType
+    
+    @State private var locationName = ""
+    @State private var searchText = ""
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(medicineName)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            
+            Text("Vælg lokation for påmindelse")
+                .foregroundColor(.white)
+                .font(.headline)
+            
+            // Search field for location
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Indtast lokationsnavn", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+                
+                Text("Kortvisning kommer snart! Indtast et beskrivende navn for lokationen.")
+                    .foregroundColor(.white.opacity(0.7))
+                    .font(.caption)
+                    .padding(.horizontal)
+            }
+            
+            // Placeholder for map (matching Android implementation)
+            VStack(spacing: 12) {
+                Image(systemName: "map")
+                    .font(.system(size: 64))
+                    .foregroundColor(.white.opacity(0.6))
+                
+                Text("Kort kommer snart!")
+                    .foregroundColor(.white)
+                    .font(.headline)
+                
+                Text("Indtast lokationsnavn ovenfor")
+                    .foregroundColor(.white.opacity(0.7))
+                    .font(.subheadline)
+            }
+            .frame(height: 250)
+            .frame(maxWidth: .infinity)
+            .background(Color.black.opacity(0.3))
+            .cornerRadius(12)
+            .padding(.horizontal)
+            
+            if !searchText.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Valgt lokation:")
+                        .foregroundColor(.white)
+                        .font(.headline)
+                    
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .foregroundColor(.white)
+                        Text(searchText)
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(red: 0.216, green: 0, blue: 0.702))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
+            
+            Spacer()
+            
+            // Save button
+            Button(action: {
+                viewModel.saveLocationOnlyMedicine(
+                    medicineName: medicineName,
+                    reminderType: reminderType,
+                    snoozeType: snoozeType,
+                    locationName: searchText.isEmpty ? "Valgt lokation" : searchText,
+                    locationLat: nil,
+                    locationLng: nil
+                )
+            }) {
+                Text("Gem")
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(!searchText.isEmpty ? 
+                                Color(red: 0.384, green: 0, blue: 0.933) : Color.gray)
+                    .cornerRadius(12)
+            }
+            .disabled(searchText.isEmpty)
             .padding()
         }
         .padding()
