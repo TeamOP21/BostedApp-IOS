@@ -487,98 +487,282 @@ struct MedicineLocationSelection: View {
     let reminderType: ReminderType
     let snoozeType: SnoozeType
     
-    @State private var locationName = ""
     @State private var searchText = ""
+    @State private var searchResults: [MKMapItem] = []
+    @State private var isSearching = false
+    @State private var selectedLocation: IdentifiableMapItem?
+    @State private var mapRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 55.6761, longitude: 12.5683), // Copenhagen
+        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+    )
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text(medicineName)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-            
-            Text("Vælg lokation for påmindelse")
-                .foregroundColor(.white)
-                .font(.headline)
-            
-            // Search field for location
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Indtast lokationsnavn", text: $searchText)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal)
-                
-                Text("Kortvisning kommer snart! Indtast et beskrivende navn for lokationen.")
-                    .foregroundColor(.white.opacity(0.7))
-                    .font(.caption)
-                    .padding(.horizontal)
-            }
-            
-            // Placeholder for map (matching Android implementation)
-            VStack(spacing: 12) {
-                Image(systemName: "map")
-                    .font(.system(size: 64))
-                    .foregroundColor(.white.opacity(0.6))
-                
-                Text("Kort kommer snart!")
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 8) {
+                Text(medicineName)
+                    .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(.white)
-                    .font(.headline)
                 
-                Text("Indtast lokationsnavn ovenfor")
-                    .foregroundColor(.white.opacity(0.7))
+                Text("Søg efter lokation")
+                    .foregroundColor(.white.opacity(0.8))
                     .font(.subheadline)
             }
-            .frame(height: 250)
-            .frame(maxWidth: .infinity)
-            .background(Color.black.opacity(0.3))
-            .cornerRadius(12)
-            .padding(.horizontal)
+            .padding()
             
-            if !searchText.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Valgt lokation:")
-                        .foregroundColor(.white)
-                        .font(.headline)
-                    
-                    HStack {
-                        Image(systemName: "location.fill")
-                            .foregroundColor(.white)
-                        Text(searchText)
-                            .foregroundColor(.white)
+            // Search field
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+                TextField("Søg efter adresse eller sted", text: $searchText)
+                    .onChange(of: searchText) { _, newValue in
+                        performSearch(query: newValue)
+                    }
+                
+                if !searchText.isEmpty {
+                    Button(action: {
+                        searchText = ""
+                        searchResults = []
+                        selectedLocation = nil
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.gray)
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(red: 0.216, green: 0, blue: 0.702))
-                .cornerRadius(8)
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(10)
+            .padding(.horizontal)
+            
+            // Search results or map
+            if !searchResults.isEmpty && selectedLocation == nil {
+                // Search results list
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(searchResults.indices, id: \.self) { index in
+                            let item = searchResults[index]
+                            Button(action: {
+                                selectLocation(item)
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.name ?? "Ukendt")
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                    
+                                    if let address = formatAddress(item.placemark) {
+                                        Text(address)
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .font(.subheadline)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                            }
+                            
+                            if index < searchResults.count - 1 {
+                                Divider()
+                                    .background(Color.white.opacity(0.3))
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 300)
+                .background(Color.black.opacity(0.3))
+                .cornerRadius(12)
                 .padding(.horizontal)
+                .padding(.top, 8)
+            } else {
+                // Map view using UIViewRepresentable for better compatibility
+                ZStack(alignment: .bottom) {
+                    MapKitView(
+                        region: $mapRegion,
+                        selectedLocation: selectedLocation
+                    )
+                    .frame(height: 300)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    
+                    if selectedLocation != nil {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Valgt lokation:")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                            
+                            HStack {
+                                Image(systemName: "location.fill")
+                                    .foregroundColor(.white)
+                                Text(selectedLocation?.item.name ?? "")
+                                    .foregroundColor(.white)
+                            }
+                            
+                            if let address = selectedLocation.flatMap({ formatAddress($0.item.placemark) }) {
+                                Text(address)
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .font(.caption)
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(red: 0.216, green: 0, blue: 0.702))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+                }
             }
             
             Spacer()
             
             // Save button
             Button(action: {
-                viewModel.saveLocationOnlyMedicine(
-                    medicineName: medicineName,
-                    reminderType: reminderType,
-                    snoozeType: snoozeType,
-                    locationName: searchText.isEmpty ? "Valgt lokation" : searchText,
-                    locationLat: nil,
-                    locationLng: nil
-                )
+                if let location = selectedLocation {
+                    let coordinate = location.item.placemark.coordinate
+                    viewModel.saveLocationOnlyMedicine(
+                        medicineName: medicineName,
+                        reminderType: reminderType,
+                        snoozeType: snoozeType,
+                        locationName: location.item.name ?? "Valgt lokation",
+                        locationLat: coordinate.latitude,
+                        locationLng: coordinate.longitude
+                    )
+                }
             }) {
                 Text("Gem")
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(!searchText.isEmpty ? 
+                    .background(selectedLocation != nil ? 
                                 Color(red: 0.384, green: 0, blue: 0.933) : Color.gray)
                     .cornerRadius(12)
             }
-            .disabled(searchText.isEmpty)
+            .disabled(selectedLocation == nil)
             .padding()
         }
-        .padding()
+        .padding(.vertical)
     }
+    
+    private func performSearch(query: String) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+        
+        isSearching = true
+        let searchRequest = MKLocalSearch.Request()
+        searchRequest.naturalLanguageQuery = query
+        searchRequest.resultTypes = [.address, .pointOfInterest]
+        
+        let search = MKLocalSearch(request: searchRequest)
+        search.start { response, error in
+            isSearching = false
+            
+            if let response = response {
+                searchResults = response.mapItems
+            } else {
+                searchResults = []
+            }
+        }
+    }
+    
+    private func selectLocation(_ item: MKMapItem) {
+        selectedLocation = IdentifiableMapItem(item: item)
+        searchResults = []
+        
+        // Update map region to center on selected location
+        let coordinate = item.placemark.coordinate
+        mapRegion = MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
+    }
+    
+    private func formatAddress(_ placemark: MKPlacemark) -> String? {
+        var components: [String] = []
+        
+        if let street = placemark.thoroughfare {
+            if let number = placemark.subThoroughfare {
+                components.append("\(street) \(number)")
+            } else {
+                components.append(street)
+            }
+        }
+        
+        if let city = placemark.locality {
+            components.append(city)
+        }
+        
+        if let postalCode = placemark.postalCode {
+            components.append(postalCode)
+        }
+        
+        return components.isEmpty ? nil : components.joined(separator: ", ")
+    }
+}
+
+// Custom MapKit View using UIViewRepresentable for better compatibility
+struct MapKitView: UIViewRepresentable {
+    @Binding var region: MKCoordinateRegion
+    let selectedLocation: IdentifiableMapItem?
+    
+    func makeUIView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+        mapView.delegate = context.coordinator
+        mapView.setRegion(region, animated: false)
+        return mapView
+    }
+    
+    func updateUIView(_ mapView: MKMapView, context: Context) {
+        // Update region
+        mapView.setRegion(region, animated: true)
+        
+        // Remove existing annotations
+        mapView.removeAnnotations(mapView.annotations)
+        
+        // Add annotation if location is selected
+        if let location = selectedLocation {
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = location.item.placemark.coordinate
+            annotation.title = location.item.name
+            mapView.addAnnotation(annotation)
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, MKMapViewDelegate {
+        var parent: MapKitView
+        
+        init(_ parent: MapKitView) {
+            self.parent = parent
+        }
+        
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            let identifier = "LocationPin"
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+            
+            if annotationView == nil {
+                annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView?.canShowCallout = true
+            } else {
+                annotationView?.annotation = annotation
+            }
+            
+            annotationView?.markerTintColor = .red
+            return annotationView
+        }
+    }
+}
+
+// Helper struct to make MKMapItem Identifiable
+struct IdentifiableMapItem: Identifiable {
+    let id = UUID()
+    let item: MKMapItem
 }
 
 // MARK: - Medicine Time Selection
@@ -622,6 +806,7 @@ struct MedicineTimeSelection: View {
                             ),
                             displayedComponents: .hourAndMinute
                         )
+                        .environment(\.locale, Locale(identifier: "da_DK"))
                         .foregroundColor(.white)
                         .colorScheme(.dark)
                         
