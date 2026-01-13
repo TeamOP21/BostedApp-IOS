@@ -626,7 +626,8 @@ struct MedicineLocationSelection: View {
             Button(action: {
                 if let location = selectedLocation {
                     let coordinate = location.item.placemark.coordinate
-                    let locationName = location.item.name ?? "Valgt lokation"
+                    // Use formatted address instead of just the name to include postal code and city
+                    let locationName = formatAddress(location.item.placemark) ?? location.item.name ?? "Valgt lokation"
                     
                     if reminderType == .locationOnly {
                         // For location only, save directly
@@ -704,6 +705,7 @@ struct MedicineLocationSelection: View {
     private func formatAddress(_ placemark: MKPlacemark) -> String? {
         var components: [String] = []
         
+        // Add street and number
         if let street = placemark.thoroughfare {
             if let number = placemark.subThoroughfare {
                 components.append("\(street) \(number)")
@@ -712,12 +714,21 @@ struct MedicineLocationSelection: View {
             }
         }
         
+        // Add postal code and city in Danish format: "PostalCode City"
+        var cityComponent = ""
+        if let postalCode = placemark.postalCode {
+            cityComponent = postalCode
+        }
         if let city = placemark.locality {
-            components.append(city)
+            if !cityComponent.isEmpty {
+                cityComponent += " \(city)"
+            } else {
+                cityComponent = city
+            }
         }
         
-        if let postalCode = placemark.postalCode {
-            components.append(postalCode)
+        if !cityComponent.isEmpty {
+            components.append(cityComponent)
         }
         
         return components.isEmpty ? nil : components.joined(separator: ", ")
