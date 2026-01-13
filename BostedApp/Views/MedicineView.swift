@@ -161,6 +161,24 @@ struct MedicineCard: View {
                     }
                     .font(.subheadline)
                     
+                    // Display times
+                    if !medicineWithReminders.reminders.isEmpty {
+                        let sortedReminders = medicineWithReminders.reminders.sorted { 
+                            ($0.hour * 60 + $0.minute) < ($1.hour * 60 + $1.minute) 
+                        }
+                        let timesString = sortedReminders.map { 
+                            String(format: "%02d:%02d", $0.hour, $0.minute) 
+                        }.joined(separator: ", ")
+                        
+                        HStack {
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(.white.opacity(0.8))
+                            Text(timesString)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .font(.subheadline)
+                    }
+                    
                     if medicineWithReminders.medicine.reminderType == .timeAndLocation {
                         HStack {
                             Image(systemName: "location.fill")
