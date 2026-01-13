@@ -320,20 +320,24 @@ struct CreateMedicineFlow: View {
                         MedicineNameInput(viewModel: viewModel)
                     case .frequencySelection(let medicineName):
                         MedicineFrequencySelection(viewModel: viewModel, medicineName: medicineName)
-                    case .locationSelection(let medicineName, let reminderType, let snoozeType):
+                    case .locationSelection(let medicineName, let frequency, let reminderType, let snoozeType):
                         MedicineLocationSelection(
-                            viewModel: viewModel,
-                            medicineName: medicineName,
-                            reminderType: reminderType,
-                            snoozeType: snoozeType
-                        )
-                    case .timeSelection(let medicineName, let frequency, let reminderType, let snoozeType):
-                        MedicineTimeSelection(
                             viewModel: viewModel,
                             medicineName: medicineName,
                             frequency: frequency,
                             reminderType: reminderType,
                             snoozeType: snoozeType
+                        )
+                    case .timeSelection(let medicineName, let frequency, let reminderType, let snoozeType, let locationName, let locationLat, let locationLng):
+                        MedicineTimeSelection(
+                            viewModel: viewModel,
+                            medicineName: medicineName,
+                            frequency: frequency,
+                            reminderType: reminderType,
+                            snoozeType: snoozeType,
+                            locationName: locationName,
+                            locationLat: locationLat,
+                            locationLng: locationLng
                         )
                     case .success:
                         Text("Medicin gemt!")
@@ -484,6 +488,7 @@ struct MedicineFrequencySelection: View {
 struct MedicineLocationSelection: View {
     @ObservedObject var viewModel: MedicineViewModel
     let medicineName: String
+    let frequency: Int
     let reminderType: ReminderType
     let snoozeType: SnoozeType
     
@@ -617,21 +622,37 @@ struct MedicineLocationSelection: View {
             
             Spacer()
             
-            // Save button
+            // Save/Next button
             Button(action: {
                 if let location = selectedLocation {
                     let coordinate = location.item.placemark.coordinate
-                    viewModel.saveLocationOnlyMedicine(
-                        medicineName: medicineName,
-                        reminderType: reminderType,
-                        snoozeType: snoozeType,
-                        locationName: location.item.name ?? "Valgt lokation",
-                        locationLat: coordinate.latitude,
-                        locationLng: coordinate.longitude
-                    )
+                    let locationName = location.item.name ?? "Valgt lokation"
+                    
+                    if reminderType == .locationOnly {
+                        // For location only, save directly
+                        viewModel.saveLocationOnlyMedicine(
+                            medicineName: medicineName,
+                            reminderType: reminderType,
+                            snoozeType: snoozeType,
+                            locationName: locationName,
+                            locationLat: coordinate.latitude,
+                            locationLng: coordinate.longitude
+                        )
+                    } else if reminderType == .timeAndLocation {
+                        // For time and location, proceed to time selection
+                        viewModel.setMedicineLocation(
+                            medicineName: medicineName,
+                            frequency: frequency,
+                            reminderType: reminderType,
+                            snoozeType: snoozeType,
+                            locationName: locationName,
+                            locationLat: coordinate.latitude,
+                            locationLng: coordinate.longitude
+                        )
+                    }
                 }
             }) {
-                Text("Gem")
+                Text(reminderType == .locationOnly ? "Gem" : "Næste")
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -773,6 +794,9 @@ struct MedicineTimeSelection: View {
     let frequency: Int
     let reminderType: ReminderType
     let snoozeType: SnoozeType
+    let locationName: String
+    let locationLat: Double?
+    let locationLng: Double?
     
     @State private var times: [Date] = []
     @State private var dosages: [Int] = []
@@ -846,9 +870,9 @@ struct MedicineTimeSelection: View {
                     times: times,
                     dosages: dosages,
                     units: units,
-                    locationName: "",
-                    locationLat: nil,
-                    locationLng: nil
+                    locationName: locationName,
+                    locationLat: locationLat,
+                    locationLng: locationLng
                 )
             }) {
                 Text("Gem")

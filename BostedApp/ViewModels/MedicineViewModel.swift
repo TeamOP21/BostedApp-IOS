@@ -14,8 +14,8 @@ enum CreateMedicineState {
     case idle
     case nameInput
     case frequencySelection(medicineName: String)
-    case locationSelection(medicineName: String, reminderType: ReminderType, snoozeType: SnoozeType)
-    case timeSelection(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType)
+    case locationSelection(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType)
+    case timeSelection(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType, locationName: String, locationLat: Double?, locationLng: Double?)
     case loading
     case success(medicineId: Int)
     case error(String)
@@ -84,10 +84,25 @@ class MedicineViewModel: ObservableObject {
     func setMedicineFrequency(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType) {
         switch reminderType {
         case .locationOnly:
-            createMedicineState = .locationSelection(medicineName: medicineName, reminderType: reminderType, snoozeType: snoozeType)
-        case .timeOnly, .timeAndLocation:
-            createMedicineState = .timeSelection(medicineName: medicineName, frequency: frequency, reminderType: reminderType, snoozeType: snoozeType)
+            createMedicineState = .locationSelection(medicineName: medicineName, frequency: 0, reminderType: reminderType, snoozeType: snoozeType)
+        case .timeAndLocation:
+            createMedicineState = .locationSelection(medicineName: medicineName, frequency: frequency, reminderType: reminderType, snoozeType: snoozeType)
+        case .timeOnly:
+            createMedicineState = .timeSelection(medicineName: medicineName, frequency: frequency, reminderType: reminderType, snoozeType: snoozeType, locationName: "", locationLat: nil, locationLng: nil)
         }
+    }
+    
+    // New method to transition from location to time selection for timeAndLocation
+    func setMedicineLocation(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType, locationName: String, locationLat: Double?, locationLng: Double?) {
+        createMedicineState = .timeSelection(
+            medicineName: medicineName,
+            frequency: frequency,
+            reminderType: reminderType,
+            snoozeType: snoozeType,
+            locationName: locationName,
+            locationLat: locationLat,
+            locationLng: locationLng
+        )
     }
     
     func saveLocationOnlyMedicine(medicineName: String, reminderType: ReminderType, snoozeType: SnoozeType, locationName: String, locationLat: Double?, locationLng: Double?) {
