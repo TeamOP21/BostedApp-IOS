@@ -190,6 +190,17 @@ class MedicineViewModel: ObservableObject {
     
     func updateMedicineReminders(medicineId: Int, updatedReminders: [Reminder]) {
         do {
+            // Fetch the medicine object
+            let medicineDescriptor = FetchDescriptor<Medicine>(
+                predicate: #Predicate { $0.id == medicineId }
+            )
+            let medicines = try modelContext.fetch(medicineDescriptor)
+            
+            guard let medicine = medicines.first else {
+                medicineState = .error("Kunne ikke finde medicin")
+                return
+            }
+            
             // Delete existing reminders
             let descriptor = FetchDescriptor<Reminder>(
                 predicate: #Predicate { $0.medicineId == medicineId }
@@ -199,9 +210,10 @@ class MedicineViewModel: ObservableObject {
                 modelContext.delete(reminder)
             }
             
-            // Insert updated reminders
+            // Insert updated reminders and set the relationship
             for reminder in updatedReminders {
                 modelContext.insert(reminder)
+                reminder.medicine = medicine
             }
             
             try modelContext.save()

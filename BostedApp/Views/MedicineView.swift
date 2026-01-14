@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import MapKit
 
+@MainActor
 struct MedicineView: View {
     @StateObject private var viewModel: MedicineViewModel
     @State private var showAddMedicine = false
@@ -115,6 +116,7 @@ struct MedicineView: View {
         .sheet(item: $selectedMedicine) { medicine in
             MedicineDetailView(
                 medicineWithReminders: medicine,
+                viewModel: viewModel,
                 onDelete: {
                     viewModel.deleteMedicine(medicine.medicine)
                 },
@@ -202,10 +204,13 @@ struct MedicineCard: View {
 
 struct MedicineDetailView: View {
     let medicineWithReminders: MedicineWithReminders
+    @ObservedObject var viewModel: MedicineViewModel
     let onDelete: () -> Void
     let onClose: () -> Void
     
     @State private var showDeleteConfirmation = false
+    @State private var isEditingSchedule = false
+    @State private var editedReminders: [EditableReminder] = []
     
     var body: some View {
         NavigationView {
@@ -230,19 +235,106 @@ struct MedicineDetailView: View {
                                 .font(.body)
                         }
                         
-                        // Tidspunkter
+                        // Tidspunkter - now editable
                         if medicineWithReminders.medicine.reminderType != .locationOnly {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Tidspunkter:")
-                                    .foregroundColor(.white)
-                                    .font(.headline)
-                                
-                                ForEach(medicineWithReminders.reminders, id: \.id) { reminder in
-                                    HStack {
-                                        Text(String(format: "%02d:%02d", reminder.hour, reminder.minute))
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("Medicinskema:")
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                    
+                                    Spacer()
+                                    
+                                    if !isEditingSchedule {
+                                        Button(action: {
+                                            startEditing()
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "pencil")
+                                                Text("Rediger")
+                                            }
                                             .foregroundColor(.white)
-                                        Text("- \(reminder.dosage) \(reminder.unit)")
-                                            .foregroundColor(.white.opacity(0.8))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(Color(red: 0.22, green: 0, blue: 0.7))
+                                            .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                
+                                if isEditingSchedule {
+                                    // Editable schedule
+                                    ForEach($editedReminders) { $reminder in
+                                        VStack(spacing: 8) {
+                                            DatePicker(
+                                                "Tidspunkt",
+                                                selection: $reminder.time,
+                                                displayedComponents: .hourAndMinute
+                                            )
+                                            .environment(\.locale, Locale(identifier: "da_DK"))
+                                            .foregroundColor(.white)
+                                            .colorScheme(.dark)
+                                            
+                                            HStack {
+                                                Text("Dosering:")
+                                                    .foregroundColor(.white)
+                                                Spacer()
+                                                Stepper(
+                                                    "\(reminder.dosage) \(reminder.unit)",
+                                                    value: $reminder.dosage,
+                                                    in: 1...10
+                                                )
+                                                .foregroundColor(.white)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(Color(red: 0.22, green: 0, blue: 0.7))
+                                        .cornerRadius(8)
+                                    }
+                                    
+                                    // Save and Cancel buttons
+                                    HStack(spacing: 12) {
+                                        Button(action: {
+                                            cancelEditing()
+                                        }) {
+                                            Text("Annuller")
+                                                .foregroundColor(.white)
+                                                .frame(maxWidth: .infinity)
+                                                .padding()
+                                                .background(Color.gray)
+                                                .cornerRadius(12)
+                                        }
+                                        
+                                        Button(action: {
+                                            saveChanges()
+                                        }) {
+                                            Text("Gem ændringer")
+                                                .foregroundColor(.white)
+                                                .frame(maxWidth: .infinity)
+                                                .padding()
+                                                .background(Color.green)
+                                                .cornerRadius(12)
+                                        }
+                                    }
+                                    .padding(.top, 8)
+                                } else {
+                                    // Read-only schedule
+                                    ForEach(medicineWithReminders.reminders.sorted(by: { 
+                                        ($0.hour * 60 + $0.minute) < ($1.hour * 60 + $1.minute) 
+                                    }), id: \.id) { reminder in
+                                        HStack {
+                                            Image(systemName: "clock.fill")
+                                                .foregroundColor(.white.opacity(0.8))
+                                            Text(String(format: "%02d:%02d", reminder.hour, reminder.minute))
+                                                .foregroundColor(.white)
+                                                .font(.title3)
+                                            Spacer()
+                                            Text("\(reminder.dosage) \(reminder.unit)")
+                                                .foregroundColor(.white.opacity(0.8))
+                                        }
+                                        .padding()
+                                        .background(Color(red: 0.22, green: 0, blue: 0.7))
+                                        .cornerRadius(8)
                                     }
                                 }
                             }
@@ -261,6 +353,9 @@ struct MedicineDetailView: View {
                                     Text(medicineWithReminders.medicine.locationName)
                                         .foregroundColor(.white)
                                 }
+                                .padding()
+                                .background(Color(red: 0.22, green: 0, blue: 0.7))
+                                .cornerRadius(8)
                             }
                         }
                         
@@ -275,24 +370,29 @@ struct MedicineDetailView: View {
                                      "6 minutters snooze aktiveret" : 
                                      "Enkelt påmindelse")
                                     .foregroundColor(.white.opacity(0.8))
+                                    .padding()
+                                    .background(Color(red: 0.22, green: 0, blue: 0.7))
+                                    .cornerRadius(8)
                             }
                         }
                         
                         Spacer()
                         
-                        // Delete button
-                        Button(action: {
-                            showDeleteConfirmation = true
-                        }) {
-                            HStack {
-                                Image(systemName: "trash.fill")
-                                Text("Slet medicin")
+                        // Delete button - only show when not editing
+                        if !isEditingSchedule {
+                            Button(action: {
+                                showDeleteConfirmation = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "trash.fill")
+                                    Text("Slet medicin")
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.red)
+                                .cornerRadius(12)
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red)
-                            .cornerRadius(12)
                         }
                     }
                     .padding()
@@ -318,6 +418,70 @@ struct MedicineDetailView: View {
             }
         }
     }
+    
+    private func startEditing() {
+        editedReminders = medicineWithReminders.reminders.map { reminder in
+            let calendar = Calendar.current
+            var components = DateComponents()
+            components.hour = reminder.hour
+            components.minute = reminder.minute
+            let time = calendar.date(from: components) ?? Date()
+            
+            return EditableReminder(
+                id: reminder.id,
+                time: time,
+                dosage: reminder.dosage,
+                unit: reminder.unit,
+                medicineId: reminder.medicineId
+            )
+        }
+        isEditingSchedule = true
+    }
+    
+    private func cancelEditing() {
+        isEditingSchedule = false
+        editedReminders = []
+    }
+    
+    private func saveChanges() {
+        let updatedReminders = editedReminders.map { editedReminder in
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.hour, .minute], from: editedReminder.time)
+            
+            return Reminder(
+                id: editedReminder.id,
+                medicineId: editedReminder.medicineId,
+                hour: components.hour ?? 0,
+                minute: components.minute ?? 0,
+                dosage: editedReminder.dosage,
+                isEnabled: true,
+                unit: editedReminder.unit
+            )
+        }
+        
+        // Use the passed viewModel to update reminders
+        viewModel.updateMedicineReminders(
+            medicineId: medicineWithReminders.medicine.id,
+            updatedReminders: updatedReminders
+        )
+        
+        isEditingSchedule = false
+        editedReminders = []
+        
+        // Close the detail view after a short delay to let the update propagate
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            onClose()
+        }
+    }
+}
+
+// Helper struct for editable reminders
+struct EditableReminder: Identifiable {
+    let id: Int
+    var time: Date
+    var dosage: Int
+    var unit: String
+    let medicineId: Int
 }
 
 // MARK: - Create Medicine Flow
