@@ -1,6 +1,7 @@
 # Xcode
 .DS_Store
 */build/*
+build/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -17,6 +18,8 @@ DerivedData/
 *.hmap
 *.ipa
 *.xcuserstate
+*.dSYM.zip
+*.dSYM
 project.xcworkspace/
 
 # CocoaPods
@@ -34,3 +37,7 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
+
+# macOS
+.AppleDouble
+.LSOverride
