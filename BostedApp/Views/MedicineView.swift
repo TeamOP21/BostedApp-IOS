@@ -7,6 +7,7 @@ struct MedicineView: View {
     @StateObject private var viewModel: MedicineViewModel
     @State private var showAddMedicine = false
     @State private var selectedMedicine: MedicineWithReminders?
+    @State private var showLogViewer = false
     
     init(modelContext: ModelContext) {
         _viewModel = StateObject(wrappedValue: MedicineViewModel(modelContext: modelContext))
@@ -29,12 +30,21 @@ struct MedicineView: View {
             VStack(spacing: 0) {
                 // Top Bar
                 HStack {
-                    Text("Medicin")
+                    Text("Medicin_test")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
                     Spacer()
+                    
+                    // Debug Logs knap
+                    Button(action: {
+                        showLogViewer = true
+                    }) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 24))
+                            .foregroundColor(.yellow)
+                    }
                     
                     Button(action: {
                         viewModel.startCreateMedicine()
@@ -124,6 +134,9 @@ struct MedicineView: View {
                     selectedMedicine = nil
                 }
             )
+        }
+        .sheet(isPresented: $showLogViewer) {
+            LogViewerView()
         }
     }
 }

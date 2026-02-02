@@ -30,6 +30,7 @@ class MedicineViewModel: ObservableObject {
     @Published var selectedMedicine: MedicineWithReminders?
     
     private let modelContext: ModelContext
+    private let notificationManager = NotificationManager.shared
     private var nextMedicineId: Int = 1
     private var nextReminderId: Int = 1
     
@@ -108,77 +109,107 @@ class MedicineViewModel: ObservableObject {
     func saveLocationOnlyMedicine(medicineName: String, reminderType: ReminderType, snoozeType: SnoozeType, locationName: String, locationLat: Double?, locationLng: Double?) {
         createMedicineState = .loading
         
-        do {
-            let medicine = Medicine(
-                id: nextMedicineId,
-                name: medicineName,
-                totalDailyDoses: 0,
-                locationEnabled: true,
-                locationName: locationName,
-                locationLat: locationLat,
-                locationLng: locationLng,
-                reminderType: reminderType,
-                snoozeType: snoozeType
-            )
-            
-            modelContext.insert(medicine)
-            try modelContext.save()
-            
-            nextMedicineId += 1
-            createMedicineState = .success(medicineId: medicine.id)
-            loadMedicines()
-            resetCreateMedicineState()
-        } catch {
-            createMedicineState = .error("Kunne ikke gemme medicin: \(error.localizedDescription)")
+        Task { @MainActor in
+            do {
+                let medicine = Medicine(
+                    id: nextMedicineId,
+                    name: medicineName,
+                    totalDailyDoses: 0,
+                    locationEnabled: true,
+                    locationName: locationName,
+                    locationLat: locationLat,
+                    locationLng: locationLng,
+                    reminderType: reminderType,
+                    snoozeType: snoozeType
+                )
+                
+                modelContext.insert(medicine)
+                try modelContext.save()
+                
+                print("✅ Location-only medicine saved: \(medicine.name)")
+                print("✅ About to schedule location notifications...")
+                
+                // Schedule notifications - WAIT for this to complete
+                await notificationManager.scheduleMedicineNotifications(
+                    medicine: medicine,
+                    reminders: []
+                )
+                
+                print("✅ Location notifications scheduled!")
+                
+                nextMedicineId += 1
+                createMedicineState = .success(medicineId: medicine.id)
+                loadMedicines()
+                resetCreateMedicineState()
+            } catch {
+                createMedicineState = .error("Kunne ikke gemme medicin: \(error.localizedDescription)")
+            }
         }
     }
     
     func saveMedicine(medicineName: String, frequency: Int, reminderType: ReminderType, snoozeType: SnoozeType, times: [Date], dosages: [Int], units: [String], locationName: String, locationLat: Double?, locationLng: Double?) {
         createMedicineState = .loading
         
-        do {
-            let medicine = Medicine(
-                id: nextMedicineId,
-                name: medicineName,
-                totalDailyDoses: frequency,
-                locationEnabled: reminderType == .timeAndLocation,
-                locationName: locationName,
-                locationLat: locationLat,
-                locationLng: locationLng,
-                reminderType: reminderType,
-                snoozeType: snoozeType
-            )
-            
-            modelContext.insert(medicine)
-            
-            // Create reminders
-            for (index, time) in times.enumerated() {
-                let calendar = Calendar.current
-                let components = calendar.dateComponents([.hour, .minute], from: time)
-                
-                let reminder = Reminder(
-                    id: nextReminderId + index,
-                    medicineId: medicine.id,
-                    hour: components.hour ?? 0,
-                    minute: components.minute ?? 0,
-                    dosage: index < dosages.count ? dosages[index] : 1,
-                    isEnabled: true,
-                    unit: index < units.count ? units[index] : "tablet(ter)"
+        Task { @MainActor in
+            do {
+                let medicine = Medicine(
+                    id: nextMedicineId,
+                    name: medicineName,
+                    totalDailyDoses: frequency,
+                    locationEnabled: reminderType == .timeAndLocation,
+                    locationName: locationName,
+                    locationLat: locationLat,
+                    locationLng: locationLng,
+                    reminderType: reminderType,
+                    snoozeType: snoozeType
                 )
                 
-                modelContext.insert(reminder)
-                reminder.medicine = medicine
+                modelContext.insert(medicine)
+                
+                // Create reminders
+                var createdReminders: [Reminder] = []
+                for (index, time) in times.enumerated() {
+                    let calendar = Calendar.current
+                    let components = calendar.dateComponents([.hour, .minute], from: time)
+                    
+                    let reminder = Reminder(
+                        id: nextReminderId + index,
+                        medicineId: medicine.id,
+                        hour: components.hour ?? 0,
+                        minute: components.minute ?? 0,
+                        dosage: index < dosages.count ? dosages[index] : 1,
+                        isEnabled: true,
+                        unit: index < units.count ? units[index] : "tablet(ter)"
+                    )
+                    
+                    modelContext.insert(reminder)
+                    reminder.medicine = medicine
+                    createdReminders.append(reminder)
+                }
+                
+                try modelContext.save()
+                
+                print("✅ Medicine saved successfully: \(medicine.name)")
+                print("✅ Reminders created: \(createdReminders.count)")
+                print("✅ About to schedule notifications...")
+                
+                // Schedule notifications - WAIT for this to complete
+                await notificationManager.scheduleMedicineNotifications(
+                    medicine: medicine,
+                    reminders: createdReminders
+                )
+                
+                print("✅ Notifications scheduled!")
+                
+                nextMedicineId += 1
+                nextReminderId += times.count
+                createMedicineState = .success(medicineId: medicine.id)
+                loadMedicines()
+                resetCreateMedicineState()
+            } catch {
+                print("❌ Error saving medicine: \(error)")
+                createMedicineState = .error("Kunne ikke gemme medicin: \(error.localizedDescription)")
             }
-            
-            try modelContext.save()
-            
-            nextMedicineId += 1
-            nextReminderId += times.count
-            createMedicineState = .success(medicineId: medicine.id)
-            loadMedicines()
-            resetCreateMedicineState()
-        } catch {
-            createMedicineState = .error("Kunne ikke gemme medicin: \(error.localizedDescription)")
         }
     }
     
@@ -189,37 +220,51 @@ class MedicineViewModel: ObservableObject {
     // MARK: - Update Medicine
     
     func updateMedicineReminders(medicineId: Int, updatedReminders: [Reminder]) {
-        do {
-            // Fetch the medicine object
-            let medicineDescriptor = FetchDescriptor<Medicine>(
-                predicate: #Predicate { $0.id == medicineId }
-            )
-            let medicines = try modelContext.fetch(medicineDescriptor)
-            
-            guard let medicine = medicines.first else {
-                medicineState = .error("Kunne ikke finde medicin")
-                return
+        Task { @MainActor in
+            do {
+                // Fetch the medicine object
+                let medicineDescriptor = FetchDescriptor<Medicine>(
+                    predicate: #Predicate { $0.id == medicineId }
+                )
+                let medicines = try modelContext.fetch(medicineDescriptor)
+                
+                guard let medicine = medicines.first else {
+                    medicineState = .error("Kunne ikke finde medicin")
+                    return
+                }
+                
+                // Delete existing reminders
+                let descriptor = FetchDescriptor<Reminder>(
+                    predicate: #Predicate { $0.medicineId == medicineId }
+                )
+                let existingReminders = try modelContext.fetch(descriptor)
+                for reminder in existingReminders {
+                    modelContext.delete(reminder)
+                }
+                
+                // Insert updated reminders and set the relationship
+                for reminder in updatedReminders {
+                    modelContext.insert(reminder)
+                    reminder.medicine = medicine
+                }
+                
+                try modelContext.save()
+                
+                print("✅ Reminders updated for: \(medicine.name)")
+                print("✅ About to reschedule notifications...")
+                
+                // Reschedule notifications with updated reminders - WAIT for this
+                await notificationManager.scheduleMedicineNotifications(
+                    medicine: medicine,
+                    reminders: updatedReminders
+                )
+                
+                print("✅ Notifications rescheduled!")
+                
+                loadMedicines()
+            } catch {
+                medicineState = .error("Kunne ikke opdatere medicinskema: \(error.localizedDescription)")
             }
-            
-            // Delete existing reminders
-            let descriptor = FetchDescriptor<Reminder>(
-                predicate: #Predicate { $0.medicineId == medicineId }
-            )
-            let existingReminders = try modelContext.fetch(descriptor)
-            for reminder in existingReminders {
-                modelContext.delete(reminder)
-            }
-            
-            // Insert updated reminders and set the relationship
-            for reminder in updatedReminders {
-                modelContext.insert(reminder)
-                reminder.medicine = medicine
-            }
-            
-            try modelContext.save()
-            loadMedicines()
-        } catch {
-            medicineState = .error("Kunne ikke opdatere medicinskema: \(error.localizedDescription)")
         }
     }
     
@@ -244,6 +289,11 @@ class MedicineViewModel: ObservableObject {
     
     func deleteMedicine(_ medicine: Medicine) {
         do {
+            // Cancel all notifications for this medicine
+            Task {
+                await notificationManager.cancelNotifications(for: medicine.id)
+            }
+            
             modelContext.delete(medicine)
             try modelContext.save()
             loadMedicines()

@@ -47,5 +47,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BostedApp har brug for din lokation for at sende påmindelser om medicin, når du ankommer til bestemte steder.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>BostedApp har brug for din lokation for at sende påmindelser om medicin, når du ankommer til bestemte steder, også når appen er i baggrunden.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

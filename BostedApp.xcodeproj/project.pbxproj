@@ -16,17 +16,20 @@
 		A1B2C3D4E5F6789012345684 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345685 /* LoginViewModel.swift */; };
 		A1B2C3D4E5F6789012345686 /* ShiftPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345687 /* ShiftPlanViewModel.swift */; };
 		A1B2C3D4E5F6789012345688 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345689 /* ActivityViewModel.swift */; };
-		A1B2C3D4E5F67890123456AC /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456AD /* MainViewModel.swift */; };
 		A1B2C3D4E5F678901234568A /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F678901234568B /* User.swift */; };
 		A1B2C3D4E5F678901234568C /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F678901234568D /* Shift.swift */; };
 		A1B2C3D4E5F678901234568E /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F678901234568F /* Activity.swift */; };
 		A1B2C3D4E5F6789012345690 /* DirectusAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345691 /* DirectusAPIClient.swift */; };
 		A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345693 /* AuthRepository.swift */; };
-		A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456AB /* APITypes.swift */; };
 		A1B2C3D4E5F6789012345694 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6789012345695 /* Assets.xcassets */; };
+		A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456AB /* APITypes.swift */; };
+		A1B2C3D4E5F67890123456AC /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456AD /* MainViewModel.swift */; };
 		A1B2C3D4E5F67890123456B1 /* Medicine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B0 /* Medicine.swift */; };
 		A1B2C3D4E5F67890123456B3 /* MedicineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */; };
-		A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B4 /* MedicineView.swift */; };
+	A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B4 /* MedicineView.swift */; };
+	A1B2C3D4E5F67890123456B7 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B6 /* NotificationManager.swift */; };
+	A1B2C3D4E5F67890123456BB /* FileLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456BC /* FileLogger.swift */; };
+	A1B2C3D4E5F67890123456BD /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456BE /* LogViewerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,18 +43,21 @@
 		A1B2C3D4E5F6789012345685 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345687 /* ShiftPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftPlanViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345689 /* ActivityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewModel.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F67890123456AD /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F678901234568B /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F678901234568D /* Shift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shift.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F678901234568F /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345691 /* DirectusAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectusAPIClient.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345693 /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F67890123456AB /* APITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITypes.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345695 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6789012345696 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F67890123456AB /* APITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITypes.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F67890123456AD /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F67890123456B0 /* Medicine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Medicine.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicineViewModel.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F67890123456B4 /* MedicineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicineView.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456B4 /* MedicineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicineView.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456B6 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456BC /* FileLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileLogger.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456BE /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +87,7 @@
 				A1B2C3D4E5F678901234569C /* ViewModels */,
 				A1B2C3D4E5F678901234569D /* Models */,
 				A1B2C3D4E5F678901234569E /* API */,
+				A1B2C3D4E5F67890123456BA /* Services */,
 				A1B2C3D4E5F6789012345695 /* Assets.xcassets */,
 				A1B2C3D4E5F6789012345696 /* Info.plist */,
 			);
@@ -141,14 +148,24 @@
 			path = API;
 			sourceTree = "<group>";
 		};
-		A1B2C3D4E5F678901234569F /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A1B2C3D4E5F6789012345683 /* TopBarView.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
+	A1B2C3D4E5F678901234569F /* Components */ = {
+		isa = PBXGroup;
+		children = (
+			A1B2C3D4E5F6789012345683 /* TopBarView.swift */,
+			A1B2C3D4E5F67890123456BE /* LogViewerView.swift */,
+		);
+		path = Components;
+		sourceTree = "<group>";
+	};
+	A1B2C3D4E5F67890123456BA /* Services */ = {
+		isa = PBXGroup;
+		children = (
+			A1B2C3D4E5F67890123456B6 /* NotificationManager.swift */,
+			A1B2C3D4E5F67890123456BC /* FileLogger.swift */,
+		);
+		path = Services;
+		sourceTree = "<group>";
+	};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -226,18 +243,21 @@
 				A1B2C3D4E5F6789012345680 /* ActivityView.swift in Sources */,
 				A1B2C3D4E5F6789012345682 /* TopBarView.swift in Sources */,
 				A1B2C3D4E5F6789012345684 /* LoginViewModel.swift in Sources */,
-			A1B2C3D4E5F6789012345686 /* ShiftPlanViewModel.swift in Sources */,
-			A1B2C3D4E5F6789012345688 /* ActivityViewModel.swift in Sources */,
-			A1B2C3D4E5F67890123456AC /* MainViewModel.swift in Sources */,
-			A1B2C3D4E5F678901234568A /* User.swift in Sources */,
+				A1B2C3D4E5F6789012345686 /* ShiftPlanViewModel.swift in Sources */,
+				A1B2C3D4E5F6789012345688 /* ActivityViewModel.swift in Sources */,
+				A1B2C3D4E5F67890123456AC /* MainViewModel.swift in Sources */,
+				A1B2C3D4E5F678901234568A /* User.swift in Sources */,
 				A1B2C3D4E5F678901234568C /* Shift.swift in Sources */,
 				A1B2C3D4E5F678901234568E /* Activity.swift in Sources */,
-			A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */,
-			A1B2C3D4E5F6789012345690 /* DirectusAPIClient.swift in Sources */,
-			A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */,
+				A1B2C3D4E5F67890123456AA /* APITypes.swift in Sources */,
+				A1B2C3D4E5F6789012345690 /* DirectusAPIClient.swift in Sources */,
+				A1B2C3D4E5F6789012345692 /* AuthRepository.swift in Sources */,
 			A1B2C3D4E5F67890123456B1 /* Medicine.swift in Sources */,
 			A1B2C3D4E5F67890123456B3 /* MedicineViewModel.swift in Sources */,
 			A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */,
+			A1B2C3D4E5F67890123456B7 /* NotificationManager.swift in Sources */,
+			A1B2C3D4E5F67890123456BB /* FileLogger.swift in Sources */,
+			A1B2C3D4E5F67890123456BD /* LogViewerView.swift in Sources */,
 		);
 		runOnlyForDeploymentPostprocessing = 0;
 	};
@@ -371,6 +391,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = QCTQ2L8589;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BostedApp/Info.plist;
@@ -400,6 +421,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = QCTQ2L8589;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BostedApp/Info.plist;
