@@ -38,7 +38,7 @@ class ActivityViewModel: ObservableObject {
                 print("  - ID: \(activity.id)")
                 print("  - Title: \(activity.title)")
                 print("  - Start DateTime string: \(activity.startDateTime)")
-                print("  - End DateTime string: \(activity.endDateTime)")
+                print("  - End DateTime string: \(activity.endDateTime ?? "nil")")
                 print("  - Parsed start date: \(activity.startDate?.description ?? "nil")")
                 print("  - Parsed end date: \(activity.endDate?.description ?? "nil")")
                 print("  - isUpcoming: \(activity.isUpcoming())")

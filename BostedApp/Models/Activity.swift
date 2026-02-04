@@ -6,7 +6,7 @@ struct Activity: Codable, Identifiable {
     let title: String
     let description: String?
     let startDateTime: String      // ISO 8601 format (e.g., "2025-11-06T14:00:00")
-    let endDateTime: String        // ISO 8601 format
+    let endDateTime: String?       // ISO 8601 format (optional - can be null in database)
     let locationId: String?        // Changed to String to handle UUID
     
     // Enriched properties
@@ -34,7 +34,7 @@ struct Activity: Codable, Identifiable {
         title = try container.decode(String.self, forKey: .title)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         startDateTime = try container.decode(String.self, forKey: .startDateTime)
-        endDateTime = try container.decode(String.self, forKey: .endDateTime)
+        endDateTime = try container.decodeIfPresent(String.self, forKey: .endDateTime)
         locationId = try container.decodeIfPresent(String.self, forKey: .locationId)
         
         // registeredUsers is not decoded from API - it's populated during enrichment
@@ -51,7 +51,7 @@ struct Activity: Codable, Identifiable {
         try container.encode(title, forKey: .title)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encode(startDateTime, forKey: .startDateTime)
-        try container.encode(endDateTime, forKey: .endDateTime)
+        try container.encodeIfPresent(endDateTime, forKey: .endDateTime)
         try container.encodeIfPresent(locationId, forKey: .locationId)
         
         // registeredUsers, subLocationName, and subLocations are not encoded - they're populated during enrichment
@@ -68,6 +68,7 @@ struct Activity: Codable, Identifiable {
     }
     
     var endDate: Date? {
+        guard let endDateTime = endDateTime else { return nil }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         formatter.timeZone = TimeZone(identifier: "Europe/Copenhagen")

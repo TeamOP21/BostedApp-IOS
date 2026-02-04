@@ -584,7 +584,37 @@ class DirectusAPIClient {
         
         // Get all activities from event table (with limit=-1 to get ALL events, not just first 100)
         let activityData = try await authenticatedGet(path: "/items/event?limit=-1")
-        let activityResponse = try JSONDecoder().decode(DirectusDataResponse<[Activity]>.self, from: activityData)
+        
+        // Log raw response for debugging
+        if let rawResponse = String(data: activityData, encoding: .utf8) {
+            print("📝 Raw activity response (first 1000 chars): \(String(rawResponse.prefix(1000)))")
+        }
+        
+        let activityResponse: DirectusDataResponse<[Activity]>
+        do {
+            activityResponse = try JSONDecoder().decode(DirectusDataResponse<[Activity]>.self, from: activityData)
+            print("✅ Successfully decoded \(activityResponse.data.count) activities")
+        } catch let decodingError as DecodingError {
+            print("❌ Activity decoding error: \(decodingError)")
+            switch decodingError {
+            case .keyNotFound(let key, let context):
+                print("❌ Missing key '\(key.stringValue)' - \(context.debugDescription)")
+                print("❌ Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            case .typeMismatch(let type, let context):
+                print("❌ Type mismatch for type '\(type)' - \(context.debugDescription)")
+                print("❌ Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            case .valueNotFound(let type, let context):
+                print("❌ Value not found for type '\(type)' - \(context.debugDescription)")
+                print("❌ Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            case .dataCorrupted(let context):
+                print("❌ Data corrupted - \(context.debugDescription)")
+                print("❌ Coding path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            @unknown default:
+                print("❌ Unknown decoding error")
+            }
+            throw decodingError
+        }
+        
         let activities = activityResponse.data
         
         // Get event-sublocation mappings (with limit=-1 to get ALL entries, not just first 100)

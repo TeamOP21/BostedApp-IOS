@@ -19,7 +19,7 @@ struct LogViewerView: View {
                         Text("Auto opdater")
                             .foregroundColor(.white)
                         Toggle("", isOn: $autoRefresh)
-                            .onChange(of: autoRefresh) { _, enabled in
+                            .onChange(of: autoRefresh) { _, enabled in 
                                 if enabled {
                                     startAutoRefresh()
                                 } else {

@@ -199,9 +199,13 @@ struct ActivityItemView: View {
     private var formattedDateTime: String {
         let startDate = formatDate(activity.startDateTime, format: "d. MMMM yyyy")
         let startTime = formatTime(activity.startDateTime)
-        let endTime = formatTime(activity.endDateTime)
         
-        return "\(startDate), \(startTime) - \(endTime)"
+        if let endDateTime = activity.endDateTime {
+            let endTime = formatTime(endDateTime)
+            return "\(startDate), \(startTime) - \(endTime)"
+        } else {
+            return "\(startDate), \(startTime)"
+        }
     }
     
     private func formatDate(_ isoString: String, format: String) -> String {
@@ -344,8 +348,13 @@ struct ActivityDetailSheet: View {
     private var formattedDateTime: String {
         let startDate = formatDate(activity.startDateTime, format: "d. MMMM yyyy")
         let startTime = formatTime(activity.startDateTime)
-        let endDate = formatDate(activity.endDateTime, format: "d. MMMM yyyy")
-        let endTime = formatTime(activity.endDateTime)
+        
+        guard let endDateTime = activity.endDateTime else {
+            return "\(startDate), \(startTime)"
+        }
+        
+        let endDate = formatDate(endDateTime, format: "d. MMMM yyyy")
+        let endTime = formatTime(endDateTime)
         
         if startDate == endDate {
             return "\(startDate), \(startTime) - \(endTime)"
