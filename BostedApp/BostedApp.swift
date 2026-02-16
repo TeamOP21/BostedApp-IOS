@@ -17,7 +17,7 @@ struct BostedAppMain: App {
         WindowGroup {
             ContentView(loginViewModel: loginViewModel, apiClient: apiClient)
         }
-        .modelContainer(for: [Medicine.self, Reminder.self])
+        .modelContainer(for: [Medicine.self, Reminder.self, ToothbrushReminder.self])
     }
 }
 

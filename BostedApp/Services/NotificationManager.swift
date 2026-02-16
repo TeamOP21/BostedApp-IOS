@@ -321,6 +321,70 @@ class NotificationManager: NSObject, ObservableObject {
         FileLogger.shared.log("Cancelled all notifications", level: .info)
     }
     
+    func cancelNotification(id: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
+        FileLogger.shared.log("Cancelled notification: \(id)", level: .info)
+    }
+    
+    // MARK: - Toothbrush Notifications
+    
+    func scheduleToothbrushReminder(
+        id: String,
+        title: String,
+        body: String,
+        hour: Int,
+        minute: Int
+    ) {
+        Task {
+            // Ensure we have permission
+            if authorizationStatus != .authorized {
+                let granted = await requestAuthorization()
+                if !granted {
+                    FileLogger.shared.log("❌ [NotificationManager] Toothbrush notification permission denied", level: .error)
+                    return
+                }
+            }
+            
+            // Create notification content
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.badge = 1
+            content.categoryIdentifier = "TOOTHBRUSH_REMINDER"
+            
+            content.userInfo = [
+                "type": "toothbrush",
+                "reminderId": id
+            ]
+            
+            // Schedule for today if time hasn't passed, otherwise starts tomorrow
+            var dateComponents = DateComponents()
+            dateComponents.hour = hour
+            dateComponents.minute = minute
+            
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: dateComponents,
+                repeats: true
+            )
+            
+            let identifier = "toothbrush_\(id)"
+            let request = UNNotificationRequest(
+                identifier: identifier,
+                content: content,
+                trigger: trigger
+            )
+            
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+                FileLogger.shared.log("✅ [NotificationManager] Scheduled toothbrush reminder: \(identifier) at \(String(format: "%02d:%02d", hour, minute))", level: .success)
+            } catch {
+                FileLogger.shared.log("❌ [NotificationManager] Error scheduling toothbrush reminder: \(error)", level: .error)
+            }
+        }
+    }
+    
     // MARK: - Debug
     
     func listAllScheduledNotifications() async {

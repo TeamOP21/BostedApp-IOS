@@ -5,6 +5,8 @@ enum NavigationDestination {
     case shiftPlan
     case activities
     case medicine
+    case more
+    case toothbrush
 }
 
 struct MainView: View {
@@ -16,6 +18,8 @@ struct MainView: View {
     
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab: NavigationDestination = .home
+    @State private var showMoreMenu = false
+    @State private var showToothbrushView = false
     
     var body: some View {
         ZStack {
@@ -54,13 +58,50 @@ struct MainView: View {
                             apiClient: apiClient,
                             userEmail: userEmail
                         )
-                    } else {
+                    } else if selectedTab == .medicine {
                         MedicineView(modelContext: modelContext)
+                    } else if selectedTab == .toothbrush {
+                        ToothbrushView(
+                            apiClient: apiClient,
+                            userEmail: userEmail,
+                            bostedId: bostedId,
+                            onDismiss: { selectedTab = .more }
+                        )
                     }
                 }
                 
                 // Bottom Navigation
-                BottomNavigationView(selectedTab: $selectedTab)
+                BottomNavigationView(
+                    selectedTab: $selectedTab,
+                    onMoreTapped: {
+                        showMoreMenu = true
+                    }
+                )
+            }
+            
+            // More menu overlay
+            if showMoreMenu {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showMoreMenu = false
+                    }
+                
+                VStack {
+                    Spacer()
+                    
+                    MoreMenuPopup(
+                        onToothbrushTapped: {
+                            showMoreMenu = false
+                            selectedTab = .toothbrush
+                        },
+                        onDismiss: {
+                            showMoreMenu = false
+                        }
+                    )
+                    .transition(.move(edge: .bottom))
+                }
+                .ignoresSafeArea()
             }
         }
     }
@@ -317,6 +358,7 @@ struct SectionCard<Content: View>: View {
 
 struct BottomNavigationView: View {
     @Binding var selectedTab: NavigationDestination
+    let onMoreTapped: () -> Void
     
     var body: some View {
         HStack(spacing: 0) {
@@ -354,6 +396,15 @@ struct BottomNavigationView: View {
                 isSelected: selectedTab == .medicine
             ) {
                 selectedTab = .medicine
+            }
+            
+            // More button
+            BottomNavItem(
+                icon: "ellipsis",
+                label: "Mere",
+                isSelected: false
+            ) {
+                onMoreTapped()
             }
         }
         .frame(height: 70)

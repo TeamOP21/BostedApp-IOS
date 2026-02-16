@@ -47,6 +47,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>BostedApp har brug for adgang til kameraet for at scanne QR-koder til tandbørstningspåmindelser.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BostedApp har brug for din lokation for at sende påmindelser om medicin, når du ankommer til bestemte steder.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

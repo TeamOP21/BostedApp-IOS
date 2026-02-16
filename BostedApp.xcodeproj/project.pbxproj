@@ -30,6 +30,11 @@
 	A1B2C3D4E5F67890123456B7 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456B6 /* NotificationManager.swift */; };
 	A1B2C3D4E5F67890123456BB /* FileLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456BC /* FileLogger.swift */; };
 	A1B2C3D4E5F67890123456BD /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456BE /* LogViewerView.swift */; };
+	A1B2C3D4E5F67890123456C0 /* Toothbrush.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456C1 /* Toothbrush.swift */; };
+	A1B2C3D4E5F67890123456C2 /* ToothbrushViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456C3 /* ToothbrushViewModel.swift */; };
+	A1B2C3D4E5F67890123456C4 /* ToothbrushView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456C5 /* ToothbrushView.swift */; };
+	A1B2C3D4E5F67890123456C6 /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456C7 /* MoreView.swift */; };
+	A1B2C3D4E5F67890123456C8 /* MoreMenuPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67890123456C9 /* MoreMenuPopup.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +63,11 @@
 	A1B2C3D4E5F67890123456B6 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 	A1B2C3D4E5F67890123456BC /* FileLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileLogger.swift; sourceTree = "<group>"; };
 	A1B2C3D4E5F67890123456BE /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456C1 /* Toothbrush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toothbrush.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456C3 /* ToothbrushViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToothbrushViewModel.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456C5 /* ToothbrushView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToothbrushView.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456C7 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
+	A1B2C3D4E5F67890123456C9 /* MoreMenuPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreMenuPopup.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,36 +118,40 @@
 				A1B2C3D4E5F678901234567B /* LoginView.swift */,
 				A1B2C3D4E5F678901234567D /* MainView.swift */,
 				A1B2C3D4E5F678901234567F /* ShiftPlanView.swift */,
-				A1B2C3D4E5F6789012345681 /* ActivityView.swift */,
-				A1B2C3D4E5F67890123456B4 /* MedicineView.swift */,
-				A1B2C3D4E5F678901234569F /* Components */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
+		A1B2C3D4E5F6789012345681 /* ActivityView.swift */,
+		A1B2C3D4E5F67890123456B4 /* MedicineView.swift */,
+		A1B2C3D4E5F67890123456C5 /* ToothbrushView.swift */,
+		A1B2C3D4E5F67890123456C7 /* MoreView.swift */,
+		A1B2C3D4E5F678901234569F /* Components */,
+	);
+	path = Views;
+	sourceTree = "<group>";
+};
 		A1B2C3D4E5F678901234569C /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6789012345685 /* LoginViewModel.swift */,
 				A1B2C3D4E5F6789012345687 /* ShiftPlanViewModel.swift */,
-				A1B2C3D4E5F6789012345689 /* ActivityViewModel.swift */,
-				A1B2C3D4E5F67890123456AD /* MainViewModel.swift */,
-				A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
+		A1B2C3D4E5F6789012345689 /* ActivityViewModel.swift */,
+		A1B2C3D4E5F67890123456AD /* MainViewModel.swift */,
+		A1B2C3D4E5F67890123456B2 /* MedicineViewModel.swift */,
+		A1B2C3D4E5F67890123456C3 /* ToothbrushViewModel.swift */,
+	);
+	path = ViewModels;
+	sourceTree = "<group>";
+};
 		A1B2C3D4E5F678901234569D /* Models */ = {
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F678901234568B /* User.swift */,
-				A1B2C3D4E5F678901234568D /* Shift.swift */,
-				A1B2C3D4E5F678901234568F /* Activity.swift */,
-				A1B2C3D4E5F67890123456B0 /* Medicine.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
+		A1B2C3D4E5F678901234568D /* Shift.swift */,
+		A1B2C3D4E5F678901234568F /* Activity.swift */,
+		A1B2C3D4E5F67890123456B0 /* Medicine.swift */,
+		A1B2C3D4E5F67890123456C1 /* Toothbrush.swift */,
+	);
+	path = Models;
+	sourceTree = "<group>";
+};
 		A1B2C3D4E5F678901234569E /* API */ = {
 			isa = PBXGroup;
 			children = (
@@ -153,6 +167,7 @@
 		children = (
 			A1B2C3D4E5F6789012345683 /* TopBarView.swift */,
 			A1B2C3D4E5F67890123456BE /* LogViewerView.swift */,
+			A1B2C3D4E5F67890123456C9 /* MoreMenuPopup.swift */,
 		);
 		path = Components;
 		sourceTree = "<group>";
@@ -255,12 +270,17 @@
 			A1B2C3D4E5F67890123456B1 /* Medicine.swift in Sources */,
 			A1B2C3D4E5F67890123456B3 /* MedicineViewModel.swift in Sources */,
 			A1B2C3D4E5F67890123456B5 /* MedicineView.swift in Sources */,
-			A1B2C3D4E5F67890123456B7 /* NotificationManager.swift in Sources */,
-			A1B2C3D4E5F67890123456BB /* FileLogger.swift in Sources */,
-			A1B2C3D4E5F67890123456BD /* LogViewerView.swift in Sources */,
-		);
-		runOnlyForDeploymentPostprocessing = 0;
-	};
+	A1B2C3D4E5F67890123456B7 /* NotificationManager.swift in Sources */,
+	A1B2C3D4E5F67890123456BB /* FileLogger.swift in Sources */,
+	A1B2C3D4E5F67890123456BD /* LogViewerView.swift in Sources */,
+	A1B2C3D4E5F67890123456C0 /* Toothbrush.swift in Sources */,
+	A1B2C3D4E5F67890123456C2 /* ToothbrushViewModel.swift in Sources */,
+	A1B2C3D4E5F67890123456C4 /* ToothbrushView.swift in Sources */,
+	A1B2C3D4E5F67890123456C6 /* MoreView.swift in Sources */,
+	A1B2C3D4E5F67890123456C8 /* MoreMenuPopup.swift in Sources */,
+	);
+	runOnlyForDeploymentPostprocessing = 0;
+};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
