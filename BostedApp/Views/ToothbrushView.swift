@@ -7,17 +7,21 @@ struct ToothbrushView: View {
     let userEmail: String
     let bostedId: String
     let onDismiss: () -> Void
+    @Binding var shouldShowQRScanner: Bool
     
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel: ToothbrushViewModel
     @State private var showAddDialog = false
     @State private var showQRScanner = false
+    @State private var showSuccessToast = false
+    @State private var successMessage = ""
     
-    init(apiClient: DirectusAPIClient, userEmail: String, bostedId: String, onDismiss: @escaping () -> Void) {
+    init(apiClient: DirectusAPIClient, userEmail: String, bostedId: String, onDismiss: @escaping () -> Void, shouldShowQRScanner: Binding<Bool>) {
         self.apiClient = apiClient
         self.userEmail = userEmail
         self.bostedId = bostedId
         self.onDismiss = onDismiss
+        self._shouldShowQRScanner = shouldShowQRScanner
         
         // Note: We'll need to pass modelContext after init
         // For now, we'll initialize it in the body
@@ -121,9 +125,25 @@ struct ToothbrushView: View {
             )
         }
         .onAppear {
-            // Re-initialize view model with correct context
-            let vm = ToothbrushViewModel(modelContext: modelContext)
-            // Note: This is a workaround, ideally we'd inject modelContext properly
+            // Note: modelContext is available here but ToothbrushViewModel is initialized in init()
+            // with ModelContainer.shared. This is a known limitation.
+            _ = ToothbrushViewModel(modelContext: modelContext)
+        }
+        .onChange(of: shouldShowQRScanner) { _, newValue in
+            if newValue {
+                // Show the QR scanner
+                showQRScanner = true
+                // Reset the binding
+                shouldShowQRScanner = false
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if showSuccessToast {
+                ToastView(message: successMessage)
+                    .padding(.bottom, 32)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showSuccessToast)
+            }
         }
     }
     
@@ -134,12 +154,26 @@ struct ToothbrushView: View {
            lowercaseCode.contains("tandbørstning_spejl") ||
            lowercaseCode.contains("tandbørstning") ||
            lowercaseCode.contains("toothbrush") {
-            // Valid QR code - show success message
-            // In a real app, you'd mark the reminder as completed
+            // Valid QR code - dismiss delivered notifications and show success toast
+            viewModel.completeAllActiveReminders()
+            showToast("Godt gået! Tandbørstning registreret.")
             print("✅ Valid toothbrush QR code scanned: \(code)")
         } else {
             // Invalid QR code
+            showToast("Ugyldig QR-kode. Prøv igen.")
             print("❌ Invalid QR code: \(code)")
+        }
+    }
+    
+    private func showToast(_ message: String) {
+        successMessage = message
+        withAnimation {
+            showSuccessToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation {
+                showSuccessToast = false
+            }
         }
     }
 }
@@ -431,6 +465,34 @@ struct QRScannerRepresentable: UIViewRepresentable {
     
     static func dismantleUIView(_ uiView: UIView, coordinator: ()) {
         // Clean up
+    }
+}
+
+// Toast View - shows a message at the bottom of the screen (like Android Snackbar)
+struct ToastView: View {
+    let message: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+                .font(.system(size: 20))
+            
+            Text(message)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(red: 0.15, green: 0.15, blue: 0.25))
+                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        )
+        .padding(.horizontal, 16)
     }
 }
 

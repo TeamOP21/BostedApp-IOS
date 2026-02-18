@@ -15,11 +15,13 @@ struct MainView: View {
     let userEmail: String
     let bostedId: String
     let onLogout: () -> Void
+    @ObservedObject var notificationDelegate: NotificationDelegate
     
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab: NavigationDestination = .home
     @State private var showMoreMenu = false
     @State private var showToothbrushView = false
+    @State private var shouldShowQRScanner = false
     
     var body: some View {
         ZStack {
@@ -65,7 +67,8 @@ struct MainView: View {
                             apiClient: apiClient,
                             userEmail: userEmail,
                             bostedId: bostedId,
-                            onDismiss: { selectedTab = .more }
+                            onDismiss: { selectedTab = .more },
+                            shouldShowQRScanner: $shouldShowQRScanner
                         )
                     }
                 }
@@ -102,6 +105,16 @@ struct MainView: View {
                     .transition(.move(edge: .bottom))
                 }
                 .ignoresSafeArea()
+            }
+        }
+        .onChange(of: notificationDelegate.shouldShowToothbrushScanner) { _, newValue in
+            if newValue {
+                // Navigate to toothbrush view and show QR scanner
+                selectedTab = .toothbrush
+                shouldShowQRScanner = true
+                
+                // Reset the notification flag
+                notificationDelegate.shouldShowToothbrushScanner = false
             }
         }
     }

@@ -7,6 +7,7 @@ struct MoreView: View {
     let bostedId: String
     
     @State private var showToothbrushSheet = false
+    @State private var showQRScannerFromSheet = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -47,7 +48,8 @@ struct MoreView: View {
                 apiClient: apiClient,
                 userEmail: userEmail,
                 bostedId: bostedId,
-                onDismiss: { showToothbrushSheet = false }
+                onDismiss: { showToothbrushSheet = false },
+                shouldShowQRScanner: $showQRScannerFromSheet
             )
         }
     }

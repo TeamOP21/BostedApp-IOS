@@ -334,7 +334,9 @@ class NotificationManager: NSObject, ObservableObject {
         title: String,
         body: String,
         hour: Int,
-        minute: Int
+        minute: Int,
+        maxRepeats: Int = 20,
+        repeatIntervalMinutes: Int = 3
     ) {
         Task {
             // Ensure we have permission
@@ -346,43 +348,140 @@ class NotificationManager: NSObject, ObservableObject {
                 }
             }
             
-            // Create notification content
+            // Create initial (daily repeating) notification content
             let content = UNMutableNotificationContent()
             content.title = title
             content.body = body
             content.sound = .default
             content.badge = 1
             content.categoryIdentifier = "TOOTHBRUSH_REMINDER"
-            
+            // Store hour/minute so the delegate can reschedule repeats when it fires
             content.userInfo = [
                 "type": "toothbrush",
-                "reminderId": id
+                "reminderId": id,
+                "hour": hour,
+                "minute": minute
             ]
             
-            // Schedule for today if time hasn't passed, otherwise starts tomorrow
             var dateComponents = DateComponents()
             dateComponents.hour = hour
             dateComponents.minute = minute
             
-            let trigger = UNCalendarNotificationTrigger(
-                dateMatching: dateComponents,
-                repeats: true
-            )
-            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
             let identifier = "toothbrush_\(id)"
-            let request = UNNotificationRequest(
-                identifier: identifier,
-                content: content,
-                trigger: trigger
-            )
+            let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
             
             do {
                 try await UNUserNotificationCenter.current().add(request)
-                FileLogger.shared.log("✅ [NotificationManager] Scheduled toothbrush reminder: \(identifier) at \(String(format: "%02d:%02d", hour, minute))", level: .success)
+                FileLogger.shared.log("✅ [NotificationManager] Scheduled toothbrush main reminder: \(identifier) at \(String(format: "%02d:%02d", hour, minute))", level: .success)
             } catch {
                 FileLogger.shared.log("❌ [NotificationManager] Error scheduling toothbrush reminder: \(error)", level: .error)
             }
+            
+            // Schedule today's repeat reminders as one-time triggers (not daily repeating)
+            await scheduleToothbrushTodayRepeats(
+                id: id,
+                title: title,
+                body: body,
+                hour: hour,
+                minute: minute,
+                maxRepeats: maxRepeats,
+                intervalMinutes: repeatIntervalMinutes
+            )
         }
+    }
+    
+    /// Schedules one-time repeat notifications for TODAY (or next occurrence).
+    /// These are NOT repeating — they fire once and are gone.
+    /// Call this when the main notification fires (via delegate) so repeats are set up fresh each day.
+    func scheduleToothbrushTodayRepeats(
+        id: String,
+        title: String = "Tandbørstning",
+        body: String = "Tid til at børste tænder! Scan QR-koden på dit badeværelsesspejl.",
+        hour: Int,
+        minute: Int,
+        maxRepeats: Int = 20,
+        intervalMinutes: Int = 3
+    ) async {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Find the next occurrence of the main reminder time
+        var components = calendar.dateComponents([.year, .month, .day], from: now)
+        components.hour = hour
+        components.minute = minute
+        components.second = 0
+        
+        guard var mainTime = calendar.date(from: components) else { return }
+        
+        // If main time has already passed today, use tomorrow
+        if mainTime <= now {
+            mainTime = calendar.date(byAdding: .day, value: 1, to: mainTime) ?? mainTime
+        }
+        
+        for i in 1...maxRepeats {
+            let repeatTime = mainTime.addingTimeInterval(TimeInterval(i * intervalMinutes * 60))
+            let timeInterval = repeatTime.timeIntervalSince(now)
+            
+            guard timeInterval > 1 else { continue } // Skip if already past
+            
+            let repeatContent = UNMutableNotificationContent()
+            repeatContent.title = title
+            repeatContent.body = "\(i + 1). gang: \(body)"
+            repeatContent.sound = .default
+            repeatContent.badge = 1
+            repeatContent.categoryIdentifier = "TOOTHBRUSH_REMINDER"
+            repeatContent.userInfo = [
+                "type": "toothbrush",
+                "reminderId": id,
+                "hour": hour,
+                "minute": minute
+            ]
+            
+            // One-time trigger — fires once, then disappears
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
+            let identifier = "toothbrush_\(id)_repeat_\(i)"
+            let request = UNNotificationRequest(identifier: identifier, content: repeatContent, trigger: trigger)
+            
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+                let repeatHour = calendar.component(.hour, from: repeatTime)
+                let repeatMin = calendar.component(.minute, from: repeatTime)
+                FileLogger.shared.log("✅ [NotificationManager] Scheduled one-time repeat \(i + 1): \(identifier) at \(String(format: "%02d:%02d", repeatHour, repeatMin)) (in \(Int(timeInterval/60)) min)", level: .success)
+            } catch {
+                FileLogger.shared.log("❌ [NotificationManager] Error scheduling one-time repeat \(i): \(error)", level: .error)
+            }
+        }
+    }
+    
+    /// Called when QR code is scanned successfully.
+    /// Cancels all pending repeat notifications for today but keeps the main daily notification.
+    func completeToothbrushReminder(id: String) {
+        let center = UNUserNotificationCenter.current()
+        
+        // Cancel all pending repeat notifications (one-time triggers for today)
+        var repeatIdentifiers: [String] = []
+        for i in 1...20 {
+            repeatIdentifiers.append("toothbrush_\(id)_repeat_\(i)")
+        }
+        center.removePendingNotificationRequests(withIdentifiers: repeatIdentifiers)
+        
+        // Also remove all delivered toothbrush notifications (clear the notification center)
+        var allIdentifiers = ["toothbrush_\(id)"] + repeatIdentifiers
+        center.removeDeliveredNotifications(withIdentifiers: allIdentifiers)
+        
+        FileLogger.shared.log("✅ [NotificationManager] QR scanned – cancelled today's repeat reminders for: \(id). Main daily reminder preserved.", level: .info)
+    }
+    
+    func cancelToothbrushReminder(id: String) {
+        let center = UNUserNotificationCenter.current()
+        var identifiers = ["toothbrush_\(id)"]
+        for i in 1...20 {
+            identifiers.append("toothbrush_\(id)_repeat_\(i)")
+        }
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        FileLogger.shared.log("✅ [NotificationManager] Cancelled toothbrush reminder entirely: \(id)", level: .info)
     }
     
     // MARK: - Debug

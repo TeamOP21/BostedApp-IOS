@@ -102,7 +102,21 @@ class ToothbrushViewModel: ObservableObject {
         )
     }
     
+    func completeReminder(id: UUID) {
+        // Cancel pending repeat notifications for today and clear delivered ones
+        notificationManager.completeToothbrushReminder(id: id.uuidString)
+    }
+    
+    func completeAllActiveReminders() {
+        // Complete all active reminders (cancel today's pending repeats, clear delivered)
+        if case .success(let reminders) = uiState {
+            for reminder in reminders where reminder.isEnabled {
+                notificationManager.completeToothbrushReminder(id: reminder.id.uuidString)
+            }
+        }
+    }
+    
     private func cancelNotification(for reminder: ToothbrushReminder) {
-        notificationManager.cancelNotification(id: reminder.id.uuidString)
+        notificationManager.cancelToothbrushReminder(id: reminder.id.uuidString)
     }
 }
